@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
         String msg = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
         model.addAttribute("errorTitle", "Data Integrity Violation");
         model.addAttribute("errorMessage", "A duplicate or invalid record was detected. " +
-                "Please check that the ISBN is unique and all required fields are filled. Details: " + msg);
+                "Please check that unique fields (such as ISBN or email) are not duplicated. Details: " + msg);
         model.addAttribute("errorCode", "409");
         return "error";
     }
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public String handleGenericException(Exception ex, Model model) {
         model.addAttribute("errorTitle", "Unexpected Error");
-        model.addAttribute("errorMessage", ex.getMessage());
+        model.addAttribute("errorMessage", ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.");
         model.addAttribute("errorCode", "500");
         return "error";
     }

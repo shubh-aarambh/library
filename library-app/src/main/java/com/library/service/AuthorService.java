@@ -18,4 +18,8 @@ public interface AuthorService {
     List<Author> getAuthorsWithAtLeastOneBook();
 
     boolean authorExists(Long id);
+
+    List<String> getAllNationalities();
+
+    List<Author> filterAuthors(String query, String nationality, boolean onlyWithBooks);
 }

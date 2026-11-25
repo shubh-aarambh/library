@@ -1,55 +1,26 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-    <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
-        <!DOCTYPE html>
-        <html lang="en">
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Error ${errorCode} — Athenaeum</title>
+    <jsp:include page="/WEB-INF/views/fragments/head.jsp"/>
+</head>
+<body>
+<jsp:include page="/WEB-INF/views/fragments/navbar.jsp"/>
 
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Error ${errorCode} — Library Manager</title>
-            <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/styles.css">
-        </head>
+<main class="main-content auth-shell">
+    <div class="auth-card" style="text-align:center; max-width:560px;">
+        <div class="badge badge-danger" style="margin-bottom:1rem;">HTTP ${errorCode}</div>
+        <h1 class="serif" style="font-size:2rem; margin-bottom:0.75rem;">${errorTitle}</h1>
+        <p style="color:var(--text-soft); margin-bottom:1.75rem; font-size:0.94rem;">${errorMessage}</p>
+        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <a href="javascript:history.back()" class="btn btn-secondary">← Go Back</a>
+            <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return Home</a>
+        </div>
+    </div>
+</main>
 
-        <body>
-
-            <nav class="navbar">
-                <a href="${pageContext.request.contextPath}/" class="navbar-brand">
-                    <span class="brand-icon">📚</span>
-                    <span>Library Manager</span>
-                </a>
-                <ul class="navbar-nav">
-                    <li><a href="${pageContext.request.contextPath}/">🏠 Home</a></li>
-                    <li><a href="${pageContext.request.contextPath}/authors">👤 Authors</a></li>
-                    <li><a href="${pageContext.request.contextPath}/books">📖 Books</a></li>
-                </ul>
-            </nav>
-
-            <div class="container" style="display:flex; align-items:center; justify-content:center; min-height:70vh;">
-                <div class="card" style="max-width:600px; width:100%; text-align:center;">
-                    <div style="font-size:4rem; margin-bottom:1rem;">
-                        <c:choose>
-                            <c:when test="${errorCode == '404'}">🔍</c:when>
-                            <c:when test="${errorCode == '409'}">⚠️</c:when>
-                            <c:otherwise>💥</c:otherwise>
-                        </c:choose>
-                    </div>
-
-                    <h1
-                        style="font-family:'Playfair Display',serif; color:var(--danger); font-size:1.8rem; margin-bottom:0.5rem;">
-                        ${errorCode} — ${errorTitle}
-                    </h1>
-
-                    <p style="color:var(--muted); margin-bottom:2rem; line-height:1.7;">
-                        ${errorMessage}
-                    </p>
-
-                    <div style="display:flex; gap:1rem; justify-content:center;">
-                        <a href="javascript:history.back()" class="btn btn-secondary">← Go Back</a>
-                        <a href="${pageContext.request.contextPath}/" class="btn btn-primary">🏠 Go Home</a>
-                    </div>
-                </div>
-            </div>
-
-        </body>
-
-        </html>
+<jsp:include page="/WEB-INF/views/fragments/footer.jsp"/>
+</body>
+</html>

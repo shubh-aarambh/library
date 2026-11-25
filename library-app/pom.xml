@@ -13,11 +13,11 @@
     </parent>
 
     <groupId>com.library</groupId>
-    <artifactId>library-app</artifactId>
-    <version>1.0.0</version>
+    <artifactId>library</artifactId>
+    <version>2.0.0</version>
     <packaging>war</packaging>
-    <name>library-app</name>
-    <description>Spring Boot Books and Authors Management Application</description>
+    <name>Athenaeum Library Platform</name>
+    <description>Spring Boot Digital Library, Circulation Engine &amp; Admin Console</description>
 
     <properties>
         <java.version>11</java.version>
@@ -36,7 +36,7 @@
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- H2 In-Memory Database -->
+        <!-- H2 Database -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
@@ -72,6 +72,7 @@
     </dependencies>
 
     <build>
+        <finalName>library</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

@@ -20,4 +20,16 @@ public interface BookService {
     List<Book> getBooksByAuthorId(Long authorId);
 
     boolean bookExists(Long id);
+
+    List<String> getAllGenres();
+
+    List<Book> getFeaturedBooks();
+
+    List<Book> getTopRatedBooks();
+
+    List<Book> filterBooks(String query, String genre, String availability, String sort);
+
+    Book toggleFeatured(Long id);
+
+    List<Object[]> getGenreBreakdown();
 }

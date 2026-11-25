@@ -46,4 +46,22 @@ public interface BookRepository extends JpaRepository<Book, Long> {
      */
     @Query("SELECT b FROM Book b INNER JOIN b.author a WHERE a.id = :authorId")
     List<Book> findBooksByAuthorIdJoined(@Param("authorId") Long authorId);
+
+    @Query("SELECT DISTINCT b.genre FROM Book b ORDER BY b.genre ASC")
+    List<String> findDistinctGenres();
+
+    List<Book> findByFeaturedTrueOrderByRatingDesc();
+
+    List<Book> findTop6ByOrderByRatingDesc();
+
+    @Query("SELECT b.genre, COUNT(b) FROM Book b GROUP BY b.genre ORDER BY COUNT(b) DESC")
+    List<Object[]> countBooksByGenre();
+
+    @Query("SELECT b FROM Book b INNER JOIN b.author a " +
+           "WHERE LOWER(b.title) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "OR LOWER(b.genre) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "OR LOWER(b.isbn) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "OR LOWER(a.name) LIKE LOWER(CONCAT('%', :q, '%')) " +
+           "ORDER BY b.title ASC")
+    List<Book> searchBooks(@Param("q") String q);
 }
