@@ -11,84 +11,50 @@
 
 <main class="main-content">
     <div class="container">
-        <div style="margin-bottom:1.4rem; display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <a href="${pageContext.request.contextPath}/authors" class="btn btn-secondary btn-sm">← Back to Authors</a>
-            <c:if test="${not empty currentUser && currentUser.admin}">
-                <a href="${pageContext.request.contextPath}/admin/authors/edit/${author.id}" class="btn btn-dark btn-sm">Edit in Admin</a>
-            </c:if>
+        <div style="font-size:0.83rem; color:var(--ink-3); margin-bottom:1.5rem;">
+            <a href="${pageContext.request.contextPath}/authors" class="header-link">Authors</a> / <span>${author.name}</span>
         </div>
 
-        <div class="card" style="padding:2rem; margin-bottom:2.25rem;">
-            <div style="display:flex; gap:1.75rem; align-items:center; flex-wrap:wrap;">
-                <div class="author-monogram" style="width:92px; height:92px; font-size:2.3rem; background:${author.avatarColor};">
-                    ${author.initials}
+        <div style="display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap; padding-bottom:2rem; margin-bottom:2rem; border-bottom:1px solid var(--border);">
+            <div class="author-circle" style="width:74px; height:74px; font-size:1.7rem; background:${author.avatarColor};">${author.initials}</div>
+            <div style="flex:1; min-width:260px;">
+                <h1 class="serif" style="font-size:2.3rem; line-height:1.12; margin-bottom:0.3rem;">${author.name}</h1>
+                <div style="font-size:0.88rem; color:var(--ink-2); margin-bottom:0.75rem;">
+                    ${author.nationality} · Born ${author.birthYear}
+                    <c:if test="${not empty author.notableAward}"> · <span style="color:var(--accent); font-weight:600;">${author.notableAward}</span></c:if>
                 </div>
-                <div style="flex:1; min-width:260px;">
-                    <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0.5rem;">
-                        <span class="badge badge-neutral">${author.nationality}</span>
-                        <span class="badge badge-neutral">Born ${author.birthYear}</span>
-                        <c:if test="${not empty author.notableAward}">
-                            <span class="badge">★ ${author.notableAward}</span>
+                <p style="font-size:0.95rem; color:var(--ink-2); max-width:720px; line-height:1.68;">${author.biography}</p>
+            </div>
+        </div>
+
+        <div class="section-head">
+            <h2>Works in Library (${authorBooks.size()})</h2>
+        </div>
+
+        <div class="shelf-grid">
+            <c:forEach var="book" items="${authorBooks}">
+                <article class="book-item">
+                    <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-cover-frame" style="background:${book.coverColor};">
+                        <c:if test="${not empty book.resolvedCoverUrl}">
+                            <img class="book-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
                         </c:if>
+                        <div class="book-cover-fallback">
+                            <span class="book-cover-fallback-genre">${book.genre}</span>
+                            <div>
+                                <div class="book-cover-fallback-title">${book.title}</div>
+                                <div class="book-cover-fallback-author">${book.publishedYear}</div>
+                            </div>
+                        </div>
+                    </a>
+                    <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-item-title">${book.title}</a>
+                    <div class="book-item-author">${book.publishedYear} · Shelf ${book.shelfLocation}</div>
+                    <div class="book-item-status">
+                        <span class="status-dot ${book.available ? 'avail' : 'wait'}">${book.available ? 'Available' : 'Waitlist'}</span>
+                        <span class="mono">${book.rating} ★</span>
                     </div>
-                    <h1 class="serif" style="font-size:2.7rem; line-height:1.1; margin-bottom:0.65rem;">${author.name}</h1>
-                    <p style="color:var(--text-soft); font-size:0.98rem; max-width:780px;">${author.biography}</p>
-                </div>
-            </div>
+                </article>
+            </c:forEach>
         </div>
-
-        <div class="section-header">
-            <div>
-                <div class="section-kicker">Published Works in Archive</div>
-                <h2 class="section-title">Bibliography (${authorBooks.size()})</h2>
-            </div>
-        </div>
-
-        <c:choose>
-            <c:when test="${empty authorBooks}">
-                <div class="card empty-state">
-                    <h3>No Volumes Listed Yet</h3>
-                    <p>No books are currently linked to ${author.name}.</p>
-                </div>
-            </c:when>
-            <c:otherwise>
-                <div class="books-grid">
-                    <c:forEach var="book" items="${authorBooks}">
-                        <article class="book-tile">
-                            <div class="book-tile-cover-wrap">
-                                <a href="${pageContext.request.contextPath}/books/${book.id}" class="real-cover" style="background:${book.coverColor};">
-                                    <c:if test="${not empty book.resolvedCoverUrl}">
-                                        <img class="real-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
-                                    </c:if>
-                                    <span class="cover-ribbon ${book.available ? 'avail' : 'waitlist'}">
-                                        ${book.available ? book.availableCopies : 'Waitlist'}${book.available ? ' avail' : ''}
-                                    </span>
-                                    <div class="cover-fallback">
-                                        <span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; opacity:0.8;">${book.genre}</span>
-                                        <div>
-                                            <div class="cover-fallback-title">${book.title}</div>
-                                            <div class="cover-fallback-author">${book.publishedYear}</div>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="book-tile-meta">
-                                <span>${book.genre} · ${book.formattedReadingTime}</span>
-                                <span style="color:var(--accent);">★ ${book.rating}</span>
-                            </div>
-                            <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-tile-title">${book.title}</a>
-                            <div class="book-tile-author">Shelf ${book.shelfLocation} · ${book.publishedYear}</div>
-                            <div class="book-tile-footer">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="openReaderPreview(${book.id})">Preview</button>
-                                <a href="${pageContext.request.contextPath}/books/${book.id}" class="btn btn-primary btn-sm" style="flex:1;">
-                                    ${book.available ? 'Borrow' : 'Waitlist'}
-                                </a>
-                            </div>
-                        </article>
-                    </c:forEach>
-                </div>
-            </c:otherwise>
-        </c:choose>
     </div>
 </main>
 

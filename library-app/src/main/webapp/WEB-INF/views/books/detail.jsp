@@ -11,191 +11,173 @@
 
 <main class="main-content">
     <div class="container">
-        <div style="margin-bottom:1.4rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-            <a href="${pageContext.request.contextPath}/books" class="btn btn-secondary btn-sm">← Back to Catalog</a>
+        <div style="font-size:0.83rem; color:var(--ink-3); margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+                <a href="${pageContext.request.contextPath}/books" class="header-link">Books</a> /
+                <a href="${pageContext.request.contextPath}/books?genre=${book.genre}" class="header-link">${book.genre}</a> /
+                <span>${book.title}</span>
+            </div>
             <c:if test="${not empty currentUser && currentUser.admin}">
-                <a href="${pageContext.request.contextPath}/admin/books/edit/${book.id}" class="btn btn-dark btn-sm">Edit in Librarian Console</a>
+                <a href="${pageContext.request.contextPath}/admin/books/edit/${book.id}" class="btn btn-secondary btn-sm">Edit in Staff Admin</a>
             </c:if>
         </div>
 
         <c:if test="${not empty successMessage}">
-            <div class="alert alert-success" data-autoclose><span>${successMessage}</span></div>
+            <div class="alert alert-success">${successMessage}</div>
         </c:if>
         <c:if test="${not empty errorMessage}">
-            <div class="alert alert-danger" data-autoclose><span>${errorMessage}</span></div>
+            <div class="alert alert-danger">${errorMessage}</div>
         </c:if>
         <c:if test="${not empty infoMessage}">
-            <div class="alert alert-info" data-autoclose><span>${infoMessage}</span></div>
+            <div class="alert alert-info">${infoMessage}</div>
         </c:if>
 
-        <div class="card" style="padding:2rem; margin-bottom:2rem;">
-            <div class="detail-hero">
-                <div>
-                    <div class="real-cover" style="background:${book.coverColor};">
-                        <c:if test="${not empty book.resolvedCoverUrl}">
-                            <img class="real-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" onerror="this.style.display='none'">
-                        </c:if>
-                        <div class="cover-fallback">
-                            <span class="badge" style="width:fit-content; background:rgba(0,0,0,0.4); color:#fde68a; border-color:rgba(255,255,255,0.2);">${book.genre}</span>
-                            <div>
-                                <div class="cover-fallback-title" style="font-size:1.75rem;">${book.title}</div>
-                                <div class="cover-fallback-author" style="font-size:0.95rem; margin-top:6px;">${book.author.name}</div>
-                            </div>
+        <div class="detail-grid">
+            <!-- Left Column: Cover + Primary Actions -->
+            <div>
+                <div class="book-cover-frame" style="background:${book.coverColor}; margin-bottom:1.15rem;">
+                    <c:if test="${not empty book.resolvedCoverUrl}">
+                        <img class="book-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" onerror="this.style.display='none'">
+                    </c:if>
+                    <div class="book-cover-fallback">
+                        <span class="book-cover-fallback-genre">${book.genre}</span>
+                        <div>
+                            <div class="book-cover-fallback-title" style="font-size:1.45rem;">${book.title}</div>
+                            <div class="book-cover-fallback-author">${book.author.name}</div>
                         </div>
                     </div>
-
-                    <button type="button" class="btn btn-dark btn-block" style="margin-top:1.1rem;" onclick="openReaderPreview(${book.id})">
-                        Open E-Reader Preview &amp; Guide
-                    </button>
                 </div>
 
-                <div>
-                    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:0.85rem;">
-                        <span class="badge badge-neutral">${book.genre}</span>
-                        <span class="badge badge-sky">${book.formatLabel}</span>
-                        <c:if test="${book.featured}">
-                            <span class="badge badge-violet">★ Staff Pick</span>
-                        </c:if>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <c:choose>
+                        <c:when test="${hasActiveLoan}">
+                            <a href="${pageContext.request.contextPath}/my-library" class="btn btn-primary btn-block">Checked out · Open My Shelf</a>
+                        </c:when>
+                        <c:when test="${book.available}">
+                            <form action="${pageContext.request.contextPath}/books/${book.id}/borrow" method="post" style="display:flex; flex-direction:column; gap:8px;">
+                                <select name="days" class="select" aria-label="Loan period">
+                                    <option value="7">Loan for 7 days</option>
+                                    <option value="14" selected>Loan for 14 days</option>
+                                    <option value="21">Loan for 21 days</option>
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-block">Borrow copy</button>
+                            </form>
+                        </c:when>
+                        <c:when test="${hasActiveHold}">
+                            <a href="${pageContext.request.contextPath}/my-library" class="btn btn-secondary btn-block">On waitlist · View My Shelf</a>
+                        </c:when>
+                        <c:otherwise>
+                            <form action="${pageContext.request.contextPath}/books/${book.id}/hold" method="post">
+                                <button type="submit" class="btn btn-primary btn-block">Join waitlist (Position #${waitlistCount + 1})</button>
+                            </form>
+                        </c:otherwise>
+                    </c:choose>
+
+                    <button type="button" class="btn btn-secondary btn-block" onclick="openReaderPreview(${book.id})">Read study guide</button>
+
+                    <form action="${pageContext.request.contextPath}/books/${book.id}/reading-list" method="post">
+                        <button type="submit" class="btn btn-ghost btn-block" style="border:1px solid var(--border);">
+                            ${inReadingList ? 'Saved in Reading List ✓' : '+ Save for later'}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right Column: Editorial Book Info -->
+            <div>
+                <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:0.75rem;">
+                    <span class="tag ${book.available ? 'tag-green' : 'tag-amber'}">
                         <c:choose>
-                            <c:when test="${book.available}">
-                                <span class="badge badge-emerald">${book.availableCopies} of ${book.totalCopies} Copies On Shelf</span>
-                            </c:when>
-                            <c:otherwise>
-                                <span class="badge badge-danger">All Copies Checked Out · ${waitlistCount} in Waitlist</span>
-                            </c:otherwise>
+                            <c:when test="${book.available}">${book.availableCopies} of ${book.totalCopies} copies available</c:when>
+                            <c:otherwise>All copies out · ${waitlistCount} waiting</c:otherwise>
                         </c:choose>
-                    </div>
+                    </span>
+                    <span class="tag">${book.formatLabel}</span>
+                    <span class="tag">${book.genre}</span>
+                </div>
 
-                    <h1 class="serif" style="font-size:2.9rem; line-height:1.08; margin-bottom:0.4rem;">${book.title}</h1>
-                    <p style="font-size:1.05rem; color:var(--text-soft); margin-bottom:1.15rem;">
-                        by <a href="${pageContext.request.contextPath}/authors/${book.author.id}" style="color:var(--accent); font-weight:700;">${book.author.name}</a>
-                        (${book.author.nationality}) · <strong style="color:var(--accent);">★ ${book.rating}</strong>
-                    </p>
+                <h1 class="serif" style="font-size:2.4rem; line-height:1.12; margin-bottom:0.35rem;">${book.title}</h1>
+                <p style="font-size:1.02rem; color:var(--ink-2); margin-bottom:1.1rem;">
+                    by <a href="${pageContext.request.contextPath}/authors/${book.author.id}" style="color:var(--ink); font-weight:600; text-decoration:underline; text-underline-offset:3px;">${book.author.name}</a>
+                    · <span class="mono">${book.rating} ★</span> (${reviews.size()} reviews)
+                </p>
 
-                    <p style="font-size:0.99rem; color:var(--text); line-height:1.75;">
-                        ${book.description}
-                    </p>
+                <p style="font-size:0.98rem; color:var(--ink); line-height:1.72; max-width:680px;">
+                    ${book.description}
+                </p>
 
-                    <c:if test="${not empty book.librarianNote}">
-                        <div class="librarian-callout">
-                            <strong style="color:var(--text); display:block; margin-bottom:3px;">Why Athenaeum Librarians Recommend This Edition</strong>
-                            ${book.librarianNote}
-                        </div>
-                    </c:if>
+                <c:if test="${not empty book.librarianNote}">
+                    <blockquote class="note-quote">
+                        <strong style="color:var(--ink); display:block; margin-bottom:2px; font-size:0.82rem; text-transform:uppercase; letter-spacing:0.05em;">Librarian’s Note</strong>
+                        ${book.librarianNote}
+                    </blockquote>
+                </c:if>
 
-                    <div class="spec-grid">
-                        <div class="spec-box"><span>Published</span><strong>${book.publishedYear}</strong></div>
-                        <div class="spec-box"><span>Reading Time</span><strong>${book.formattedReadingTime}</strong></div>
-                        <div class="spec-box"><span>Length</span><strong>${book.pages} pages</strong></div>
-                        <div class="spec-box"><span>Shelf Location</span><strong class="mono">${book.shelfLocation}</strong></div>
-                        <div class="spec-box"><span>ISBN</span><strong class="mono" style="font-size:0.8rem;">${book.isbn}</strong></div>
-                    </div>
-
-                    <!-- Primary Action Row: Borrow / Waitlist Hold / Bookmark -->
-                    <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:1.4rem;">
-                        <c:choose>
-                            <c:when test="${hasActiveLoan}">
-                                <a href="${pageContext.request.contextPath}/my-library" class="btn btn-emerald btn-lg">Checked Out · Open Pickup Pass &amp; Progress</a>
-                            </c:when>
-                            <c:when test="${book.available}">
-                                <form action="${pageContext.request.contextPath}/books/${book.id}/borrow" method="post" style="display:flex; gap:8px; align-items:center;">
-                                    <select name="days" class="filter-select" aria-label="Loan window">
-                                        <option value="7">7 Days</option>
-                                        <option value="14" selected>14 Days (Standard)</option>
-                                        <option value="21">21 Days</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-primary btn-lg">Borrow &amp; Get Pickup Pass</button>
-                                </form>
-                            </c:when>
-                            <c:when test="${hasActiveHold}">
-                                <a href="${pageContext.request.contextPath}/my-library" class="btn btn-gold-outline btn-lg">✓ On Waitlist · Check Hold Status</a>
-                            </c:when>
-                            <c:otherwise>
-                                <form action="${pageContext.request.contextPath}/books/${book.id}/hold" method="post">
-                                    <button type="submit" class="btn btn-primary btn-lg">Join Waitlist Queue (Position #${waitlistCount + 1})</button>
-                                </form>
-                            </c:otherwise>
-                        </c:choose>
-
-                        <form action="${pageContext.request.contextPath}/books/${book.id}/reading-list" method="post">
-                            <button type="submit" class="btn ${inReadingList ? 'btn-gold-outline' : 'btn-secondary'} btn-lg">
-                                ${inReadingList ? '✓ Saved in Reading List' : '+ Save for Later'}
-                            </button>
-                        </form>
-                    </div>
+                <div class="meta-table" style="max-width:520px;">
+                    <div class="meta-row"><span>Published</span><strong>${book.publishedYear}</strong></div>
+                    <div class="meta-row"><span>Length</span><strong>${book.pages} pages (${book.formattedReadingTime})</strong></div>
+                    <div class="meta-row"><span>Language</span><strong>${book.language}</strong></div>
+                    <div class="meta-row"><span>Shelf Location</span><strong class="mono">${book.shelfLocation}</strong></div>
+                    <div class="meta-row"><span>ISBN</span><strong class="mono">${book.isbn}</strong></div>
                 </div>
             </div>
         </div>
 
-        <!-- Reviews & Community Notes -->
-        <div class="dashboard-split">
-            <div class="card">
-                <div class="section-header" style="margin-bottom:1.1rem;">
-                    <div>
-                        <div class="section-kicker">Reader Community</div>
-                        <h2 class="serif" style="font-size:1.75rem;">Reviews (${reviews.size()})</h2>
-                    </div>
-                    <span class="badge">★ ${book.rating} / 5.0</span>
+        <!-- Reader Reviews -->
+        <div class="split-2">
+            <div>
+                <div class="section-head">
+                    <h2>Reader Reviews (${reviews.size()})</h2>
                 </div>
-
                 <c:choose>
                     <c:when test="${empty reviews}">
-                        <div class="empty-state" style="padding:2rem 1rem;">
-                            <p>No community reviews yet — share your perspective after reading!</p>
-                        </div>
+                        <p style="color:var(--ink-2); font-size:0.9rem;">No reviews yet. Be the first reader to share a note.</p>
                     </c:when>
                     <c:otherwise>
                         <c:forEach var="rev" items="${reviews}">
-                            <div class="timeline-item">
-                                <div class="user-avatar" style="flex-shrink:0;">${rev.member.initials}</div>
-                                <div style="flex:1;">
-                                    <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-                                        <strong>${rev.member.fullName}</strong>
-                                        <span style="color:var(--accent); font-weight:700;">★ ${rev.rating}/5</span>
-                                    </div>
-                                    <div style="font-size:0.74rem; color:var(--text-muted); margin-bottom:4px;">${rev.formattedDate}</div>
-                                    <p style="font-size:0.9rem; color:var(--text-soft);">${rev.comment}</p>
+                            <div style="padding:1rem 0; border-bottom:1px solid var(--border);">
+                                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                                    <strong>${rev.member.fullName}</strong>
+                                    <span class="mono" style="font-size:0.84rem;">${rev.rating} / 5 ★</span>
                                 </div>
+                                <div style="font-size:0.76rem; color:var(--ink-3); margin-bottom:6px;">${rev.formattedDate}</div>
+                                <p style="font-size:0.9rem; color:var(--ink-2);">${rev.comment}</p>
                             </div>
                         </c:forEach>
                     </c:otherwise>
                 </c:choose>
             </div>
 
-            <div class="card">
-                <div class="section-kicker">Add Your Voice</div>
-                <h2 class="serif" style="font-size:1.7rem; margin-bottom:0.9rem;">Write a Review</h2>
+            <div class="panel">
+                <h3 class="serif" style="font-size:1.35rem; margin-bottom:0.85rem;">Write a review</h3>
                 <c:choose>
                     <c:when test="${not empty currentUser}">
                         <form action="${pageContext.request.contextPath}/books/${book.id}/reviews" method="post">
                             <div class="form-group">
                                 <label for="rating">Rating</label>
                                 <select name="rating" id="rating" class="form-control">
-                                    <option value="5">★★★★★ — 5 / 5 Essential Read</option>
-                                    <option value="4">★★★★☆ — 4 / 5 Strongly Recommended</option>
-                                    <option value="3">★★★☆☆ — 3 / 5 Enjoyable</option>
-                                    <option value="2">★★☆☆☆ — 2 / 5 Mixed</option>
-                                    <option value="1">★☆☆☆☆ — 1 / 5 Not For Me</option>
+                                    <option value="5">5 — Essential read</option>
+                                    <option value="4">4 — Strongly recommend</option>
+                                    <option value="3">3 — Good</option>
+                                    <option value="2">2 — Fair</option>
+                                    <option value="1">1 — Not for me</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="comment">Your Thoughts</label>
-                                <textarea name="comment" id="comment" class="form-control" rows="4" required
-                                          placeholder="Share what resonated with you about this book..."></textarea>
+                                <label for="comment">Your note</label>
+                                <textarea name="comment" id="comment" class="form-control" rows="3" required placeholder="Share your thoughts on this edition..."></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary btn-block">Publish Review</button>
+                            <button type="submit" class="btn btn-primary btn-block">Post review</button>
                         </form>
                     </c:when>
                     <c:otherwise>
-                        <p style="color:var(--text-soft); font-size:0.9rem; margin-bottom:1.15rem;">
-                            Sign in with a reader account (or use our 1-Click Demo Reader) to borrow titles, join waitlists, and post reviews.
-                        </p>
-                        <div style="display:flex; flex-direction:column; gap:10px;">
+                        <p style="font-size:0.88rem; color:var(--ink-2); margin-bottom:1rem;">Sign in to borrow books, join waitlists, and post reviews.</p>
+                        <div style="display:flex; flex-direction:column; gap:8px;">
                             <form action="${pageContext.request.contextPath}/demo-login" method="post">
                                 <input type="hidden" name="next" value="/books/${book.id}">
-                                <button type="submit" class="btn btn-primary btn-block">1-Click Demo Reader Sign In</button>
+                                <button type="submit" class="btn btn-primary btn-block">Sign in as Demo Reader</button>
                             </form>
-                            <a href="${pageContext.request.contextPath}/login?next=/books/${book.id}" class="btn btn-secondary btn-block">Sign In / Get Library Card</a>
+                            <a href="${pageContext.request.contextPath}/login?next=/books/${book.id}" class="btn btn-secondary btn-block">Sign in / Register</a>
                         </div>
                     </c:otherwise>
                 </c:choose>

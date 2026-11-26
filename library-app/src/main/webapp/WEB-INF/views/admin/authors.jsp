@@ -3,68 +3,43 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Manage Authors — Admin Console</title>
+    <title>Authors — Staff Admin</title>
     <jsp:include page="/WEB-INF/views/fragments/head.jsp"/>
 </head>
 <body>
 <jsp:include page="/WEB-INF/views/fragments/admin-layout-start.jsp"/>
 
-<div class="section-header">
+<div class="page-top" style="padding-bottom:1rem; margin-bottom:1.25rem;">
     <div>
-        <h1 class="section-title" style="font-size:1.75rem;">Authors Registry (${authors.size()})</h1>
-        <p class="section-subtitle">Manage author biographies, literary honors, and linked volumes</p>
+        <h1 class="page-title" style="font-size:1.65rem;">Authors (${authors.size()})</h1>
+        <p class="page-sub">Maintain author biographies and linked books</p>
     </div>
-    <a href="${pageContext.request.contextPath}/admin/authors/new" class="btn btn-primary btn-sm">+ Add Author</a>
+    <a href="${pageContext.request.contextPath}/admin/authors/new" class="btn btn-primary btn-sm">Add author</a>
 </div>
 
-<form action="${pageContext.request.contextPath}/admin/authors" method="get" class="filter-bar">
-    <div class="filter-search">
-        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input type="text" name="q" value="${query}" data-quick-search placeholder="Search authors by name, nationality, or award...">
-    </div>
-    <button type="submit" class="btn btn-primary btn-sm">Search</button>
+<form action="${pageContext.request.contextPath}/admin/authors" method="get" class="filter-strip">
+    <input type="text" name="q" value="${query}" class="input" style="flex:1 1 240px;" placeholder="Search authors...">
+    <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
 </form>
 
-<div class="card" style="padding:0;">
-    <div class="table-wrapper">
+<div class="panel" style="padding:0;">
+    <div class="table-wrap">
         <table>
-            <thead>
-                <tr>
-                    <th>Author</th>
-                    <th>Nationality</th>
-                    <th>Birth Year</th>
-                    <th>Notable Distinction</th>
-                    <th>Volumes</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Author</th><th>Nationality</th><th>Born</th><th>Award</th><th>Books</th><th></th></tr></thead>
             <tbody>
                 <c:forEach var="author" items="${authors}">
                     <tr>
-                        <td>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <span class="author-monogram" style="width:36px; height:36px; font-size:0.85rem; border-radius:9px; background:${author.avatarColor};">
-                                    ${author.initials}
-                                </span>
-                                <strong>${author.name}</strong>
-                            </div>
-                        </td>
-                        <td><span class="badge badge-neutral">${author.nationality}</span></td>
+                        <td><strong>${author.name}</strong></td>
+                        <td>${author.nationality}</td>
                         <td>${author.birthYear}</td>
-                        <td style="font-size:0.84rem; color:var(--text-soft);">${not empty author.notableAward ? author.notableAward : '—'}</td>
-                        <td><span class="badge">${author.books.size()}</span></td>
-                        <td>
-                            <div style="display:flex; gap:6px;">
-                                <a href="${pageContext.request.contextPath}/authors/${author.id}" class="btn btn-secondary btn-sm" target="_blank">Profile</a>
-                                <a href="${pageContext.request.contextPath}/admin/authors/edit/${author.id}" class="btn btn-gold-outline btn-sm">Edit</a>
-                                <form action="${pageContext.request.contextPath}/admin/authors/delete/${author.id}" method="post"
-                                      onsubmit="return confirm('Delete this author and cascade delete their linked books?')">
-                                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                </form>
-                            </div>
+                        <td style="font-size:0.84rem; color:var(--ink-2);">${not empty author.notableAward ? author.notableAward : '—'}</td>
+                        <td class="mono">${author.books.size()}</td>
+                        <td style="text-align:right; white-space:nowrap;">
+                            <a href="${pageContext.request.contextPath}/admin/authors/edit/${author.id}" class="btn btn-secondary btn-sm">Edit</a>
+                            <form action="${pageContext.request.contextPath}/admin/authors/delete/${author.id}" method="post" style="display:inline;"
+                                  onsubmit="return confirm('Delete this author and cascade delete their linked books?')">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
                         </td>
                     </tr>
                 </c:forEach>
@@ -76,4 +51,3 @@
 <jsp:include page="/WEB-INF/views/fragments/admin-layout-end.jsp"/>
 </body>
 </html>
-

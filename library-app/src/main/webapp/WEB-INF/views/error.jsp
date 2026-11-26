@@ -9,14 +9,16 @@
 <body>
 <jsp:include page="/WEB-INF/views/fragments/navbar.jsp"/>
 
-<main class="main-content auth-shell">
-    <div class="auth-card" style="text-align:center; max-width:560px;">
-        <div class="badge badge-danger" style="margin-bottom:1rem;">HTTP ${errorCode}</div>
-        <h1 class="serif" style="font-size:2rem; margin-bottom:0.75rem;">${errorTitle}</h1>
-        <p style="color:var(--text-soft); margin-bottom:1.75rem; font-size:0.94rem;">${errorMessage}</p>
-        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-            <a href="javascript:history.back()" class="btn btn-secondary">← Go Back</a>
-            <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return Home</a>
+<main class="main-content">
+    <div class="auth-wrap" style="max-width:520px; text-align:center;">
+        <div class="panel">
+            <div class="tag tag-red" style="margin-bottom:0.85rem;">HTTP ${errorCode}</div>
+            <h1 class="serif" style="font-size:1.85rem; margin-bottom:0.5rem;">${errorTitle}</h1>
+            <p style="font-size:0.9rem; color:var(--ink-2); margin-bottom:1.5rem;">${errorMessage}</p>
+            <div style="display:flex; gap:8px; justify-content:center;">
+                <a href="javascript:history.back()" class="btn btn-secondary">Go back</a>
+                <a href="${pageContext.request.contextPath}/" class="btn btn-primary">Return home</a>
+            </div>
         </div>
     </div>
 </main>

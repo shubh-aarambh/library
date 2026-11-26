@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>${pageTitle} — Athenaeum</title>
+    <title>Books + Authors Join — Athenaeum</title>
     <jsp:include page="/WEB-INF/views/fragments/head.jsp"/>
 </head>
 <body>
@@ -11,74 +11,43 @@
 
 <main class="main-content">
     <div class="container">
-        <div class="section-header">
+        <div class="page-top">
             <div>
-                <div class="section-kicker">Spring Data JPA · Relational Query</div>
-                <h1 class="section-title">Books × Authors Inner Join Explorer</h1>
-                <p class="section-subtitle">Live JPQL projection joining the Books and Authors relational tables</p>
+                <h1 class="page-title">Books &amp; Authors Inner Join</h1>
+                <p class="page-sub">Live JPQL relational join projection across Books and Authors tables</p>
             </div>
-            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                <a href="${pageContext.request.contextPath}/api/books/export.csv" class="btn btn-gold-outline btn-sm">Download CSV</a>
-                <a href="${pageContext.request.contextPath}/authors/with-books" class="btn btn-secondary btn-sm">Authors With Books Join</a>
-                <a href="${pageContext.request.contextPath}/books" class="btn btn-secondary btn-sm">← Catalog</a>
+            <div style="display:flex; gap:8px;">
+                <a href="${pageContext.request.contextPath}/api/books/export.csv" class="btn btn-secondary btn-sm">Export CSV</a>
+                <a href="${pageContext.request.contextPath}/books" class="btn btn-secondary btn-sm">← Books</a>
             </div>
         </div>
 
-        <div class="jpql-code-box">
-            SELECT b.title, b.genre, b.isbn, b.publishedYear, a.name<br>
-            FROM Book b INNER JOIN b.author a<br>
-            ORDER BY a.name, b.title
-        </div>
+        <div class="jpql-code-box">SELECT b.title, b.genre, b.isbn, b.publishedYear, a.name FROM Book b INNER JOIN b.author a ORDER BY a.name, b.title</div>
 
-        <form action="${pageContext.request.contextPath}/books/joined" method="get" class="filter-bar">
-            <div class="filter-search">
-                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <input type="text" name="q" value="${query}" data-quick-search placeholder="Filter joined rows by book title, genre, ISBN, or author...">
-            </div>
-            <button type="submit" class="btn btn-primary btn-sm">Filter Rows</button>
-            <span class="badge badge-sky">${rows.size()} Joined Record(s)</span>
+        <form action="${pageContext.request.contextPath}/books/joined" method="get" class="filter-strip">
+            <input type="text" name="q" value="${query}" class="input" style="flex:1 1 240px;" placeholder="Filter joined rows...">
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            <span class="tag">${rows.size()} rows</span>
         </form>
 
-        <div class="card" style="padding:0;">
-            <c:choose>
-                <c:when test="${empty rows}">
-                    <div class="empty-state">
-                        <h3>No Joined Results</h3>
-                        <p>No records match your filter criteria.</p>
-                    </div>
-                </c:when>
-                <c:otherwise>
-                    <div class="table-wrapper">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Book Title</th>
-                                    <th>Genre</th>
-                                    <th>ISBN</th>
-                                    <th>Published Year</th>
-                                    <th>Author Name</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <c:forEach var="row" items="${rows}" varStatus="status">
-                                    <tr>
-                                        <td class="mono" style="color:var(--text-muted);">${status.count}</td>
-                                        <td><strong>${row[0]}</strong></td>
-                                        <td><span class="badge">${row[1]}</span></td>
-                                        <td class="mono" style="font-size:0.78rem; color:var(--text-muted);">${row[2]}</td>
-                                        <td>${row[3]}</td>
-                                        <td style="color:var(--gold); font-weight:600;">${row[4]}</td>
-                                    </tr>
-                                </c:forEach>
-                            </tbody>
-                        </table>
-                    </div>
-                </c:otherwise>
-            </c:choose>
+        <div class="panel" style="padding:0;">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>#</th><th>Title</th><th>Genre</th><th>ISBN</th><th>Year</th><th>Author</th></tr></thead>
+                    <tbody>
+                        <c:forEach var="row" items="${rows}" varStatus="status">
+                            <tr>
+                                <td class="mono" style="color:var(--ink-3);">${status.count}</td>
+                                <td><strong>${row[0]}</strong></td>
+                                <td><span class="tag">${row[1]}</span></td>
+                                <td class="mono" style="font-size:0.78rem; color:var(--ink-3);">${row[2]}</td>
+                                <td>${row[3]}</td>
+                                <td>${row[4]}</td>
+                            </tr>
+                        </c:forEach>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </main>

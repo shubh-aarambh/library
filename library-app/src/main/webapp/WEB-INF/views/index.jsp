@@ -3,260 +3,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Athenaeum — Smart Campus &amp; Digital Library</title>
+    <title>Athenaeum — Public &amp; Digital Library</title>
     <jsp:include page="/WEB-INF/views/fragments/head.jsp"/>
 </head>
 <body>
 <jsp:include page="/WEB-INF/views/fragments/navbar.jsp"/>
 
 <main class="main-content">
-    <!-- Editorial Magazine Hero -->
-    <div class="hero-wrap">
-        <section class="hero-section">
-            <c:if test="${not empty successMessage}">
-                <div class="alert alert-success" data-autoclose><span>${successMessage}</span></div>
-            </c:if>
-
-            <div class="hero-grid">
-                <div>
-                    <div class="hero-eyebrow">
-                        <span class="dot"></span>
-                        <span>${stats.availableCopies} copies on shelf right now · Print &amp; Digital Access</span>
+    <!-- Featured Staff Pick Spread (Clean Editorial Layout — Like Bookshop.org / NYPL) -->
+    <c:if test="${not empty featuredBooks}">
+        <c:set var="lead" value="${featuredBooks[0]}"/>
+        <section class="featured-band">
+            <div class="featured-inner">
+                <a href="${pageContext.request.contextPath}/books/${lead.id}" class="book-cover-frame" style="margin-bottom:0; background:${lead.coverColor};">
+                    <c:if test="${not empty lead.resolvedCoverUrl}">
+                        <img class="book-cover-img" src="${lead.resolvedCoverUrl}" alt="${lead.title}" onerror="this.style.display='none'">
+                    </c:if>
+                    <div class="book-cover-fallback">
+                        <span class="book-cover-fallback-genre">${lead.genre}</span>
+                        <div>
+                            <div class="book-cover-fallback-title">${lead.title}</div>
+                            <div class="book-cover-fallback-author">${lead.author.name}</div>
+                        </div>
                     </div>
+                </a>
 
-                    <h1 class="hero-title">
-                        Your modern library,<br>
-                        <em>designed for readers.</em>
-                    </h1>
+                <div>
+                    <div class="featured-label">Librarian’s Pick</div>
+                    <h1 class="featured-title">${lead.title}</h1>
+                    <div class="featured-author">
+                        by <a href="${pageContext.request.contextPath}/authors/${lead.author.id}" style="text-decoration:underline; text-underline-offset:3px;">${lead.author.name}</a>
+                        · ${lead.genre} · ${lead.publishedYear}
+                    </div>
+                    <p class="featured-desc">${lead.description}</p>
+                    <div class="featured-actions">
+                        <a href="${pageContext.request.contextPath}/books/${lead.id}" class="btn btn-primary">
+                            ${lead.available ? 'Borrow copy' : 'Join waitlist'}
+                        </a>
+                        <button type="button" class="btn btn-secondary" onclick="openReaderPreview(${lead.id})">Read study notes</button>
+                        <span style="font-size:0.82rem; color:var(--ink-2); margin-left:4px;">
+                            ${lead.availableCopies} of ${lead.totalCopies} copies on Shelf ${lead.shelfLocation}
+                        </span>
+                    </div>
+                </div>
 
-                    <p class="hero-desc">
-                        Browse print &amp; digital books with real-time shelf availability, open our built-in study guide e-reader, reserve copies with QR pickup passes, join waitlists automatically, and track your reading progress.
-                    </p>
-
-                    <form action="${pageContext.request.contextPath}/books" method="get" class="hero-search">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color:var(--accent); flex-shrink:0;">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" name="q" placeholder="Search Dune, George Orwell, Sci-Fi, or press ⌘K...">
-                        <button type="submit" class="btn btn-primary btn-sm">Search Catalog</button>
-                    </form>
-
-                    <!-- Clear Dual-Portal Interactive Demo Actions -->
-                    <div class="portal-switcher">
-                        <a href="${pageContext.request.contextPath}/books" class="btn btn-dark">Browse Full Catalog</a>
+                <!-- Honest, Grounded Library Status & Role Access Box -->
+                <aside class="featured-aside">
+                    <div>
+                        <div style="font-size:0.78rem; font-weight:600; color:var(--ink-3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px;">
+                            Library Catalog Status
+                        </div>
+                        <div class="aside-stat-row"><span>Available copies</span><strong>${stats.availableCopies} / ${stats.totalCopies}</strong></div>
+                        <div class="aside-stat-row"><span>Titles &amp; authors</span><strong>${stats.totalBooks} / ${stats.totalAuthors}</strong></div>
+                        <div class="aside-stat-row"><span>Active loans</span><strong>${stats.openLoans}</strong></div>
+                        <div class="aside-stat-row"><span>Waitlist holds</span><strong>${stats.openHolds}</strong></div>
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:7px;">
                         <c:choose>
                             <c:when test="${not empty currentUser}">
-                                <a href="${pageContext.request.contextPath}/my-library" class="btn btn-gold-outline">Open My Library Card</a>
+                                <a href="${pageContext.request.contextPath}/my-library" class="btn btn-dark btn-sm btn-block">Open My Shelf</a>
                             </c:when>
                             <c:otherwise>
-                                <form action="${pageContext.request.contextPath}/demo-login" method="post" style="display:inline;">
-                                    <button type="submit" class="btn btn-gold-outline">Try Demo Reader</button>
+                                <form action="${pageContext.request.contextPath}/demo-login" method="post">
+                                    <button type="submit" class="btn btn-dark btn-sm btn-block">Try Demo Member Account</button>
                                 </form>
                             </c:otherwise>
                         </c:choose>
-                        <a href="${pageContext.request.contextPath}/admin" class="btn btn-secondary">Librarian Admin Site ↗</a>
+                        <a href="${pageContext.request.contextPath}/admin" class="btn btn-secondary btn-sm btn-block">Staff / Librarian Admin</a>
                     </div>
-
-                    <div class="hero-trust-strip">
-                        <div class="trust-metric">
-                            <strong>${stats.totalBooks} Titles</strong>
-                            <span>${stats.totalCopies} total shelf copies</span>
-                        </div>
-                        <div class="trust-metric">
-                            <strong>${stats.totalAuthors} Authors</strong>
-                            <span>Across ${stats.totalGenres} curated genres</span>
-                        </div>
-                        <div class="trust-metric">
-                            <strong>${stats.openLoans} Active Loans</strong>
-                            <span>${stats.openHolds} waitlist holds live</span>
-                        </div>
-                        <div class="trust-metric">
-                            <strong>${stats.avgRating} ★</strong>
-                            <span>Community reader rating</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3D Fanned Real-Cover Book Showcase -->
-                <div class="hero-showcase">
-                    <div class="book-fan">
-                        <c:forEach var="hb" items="${heroStack}">
-                            <a href="${pageContext.request.contextPath}/books/${hb.id}" class="fan-book" style="background:${hb.coverColor};" title="${hb.title}">
-                                <div class="real-cover" style="height:100%; aspect-ratio:auto; border-radius:0; box-shadow:none; background:${hb.coverColor};">
-                                    <c:if test="${not empty hb.resolvedCoverUrl}">
-                                        <img class="real-cover-img" src="${hb.resolvedCoverUrl}" alt="${hb.title}" onerror="this.style.display='none'">
-                                    </c:if>
-                                    <div class="cover-fallback">
-                                        <span class="badge" style="width:fit-content; background:rgba(0,0,0,0.45); color:#fde68a; border-color:rgba(255,255,255,0.2);">${hb.genre}</span>
-                                        <div>
-                                            <div class="cover-fallback-title">${hb.title}</div>
-                                            <div class="cover-fallback-author">${hb.author.name}</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                        </c:forEach>
-                    </div>
-                    <div class="hero-floating-pill">
-                        <span style="width:8px; height:8px; border-radius:50%; background:var(--emerald);"></span>
-                        <span>Click any cover to preview guide, borrow, or reserve</span>
-                    </div>
-                </div>
+                </aside>
             </div>
         </section>
-    </div>
+    </c:if>
 
-    <div class="container">
-        <!-- Crystal-Clear 3-Step User Journey -->
-        <div class="journey-strip">
-            <div class="journey-card">
-                <span class="journey-step">01 · Discover &amp; Preview</span>
-                <h3>Browse real editions &amp; open the E-Reader</h3>
-                <p>Use instant ⌘K search, filter by genre or reading time, and open our distraction-free Reader Guide before borrowing.</p>
-            </div>
-            <div class="journey-card">
-                <span class="journey-step">02 · Borrow, Waitlist &amp; Track</span>
-                <h3>QR pickup passes &amp; reading progress</h3>
-                <p>Borrow shelf copies in one click, join automatic waitlists when copies are out, and track reading progress on your Digital Library Card.</p>
-            </div>
-            <div class="journey-card">
-                <span class="journey-step">03 · Librarian Admin Console</span>
-                <h3>Complete circulation &amp; inventory control</h3>
-                <p>Switch to the RBAC-protected Librarian site to adjust stock, fulfill waitlist holds, settle overdue fines, and view Chart.js analytics.</p>
-            </div>
-        </div>
+    <div class="container" style="padding-top:0.5rem;">
+        <c:if test="${not empty successMessage}">
+            <div class="alert alert-success" style="margin-top:1.25rem;">${successMessage}</div>
+        </c:if>
 
-        <!-- Genre Quick Navigation -->
-        <div class="genre-pills" style="margin-bottom:2.5rem;">
-            <a href="${pageContext.request.contextPath}/books" class="genre-pill active">All Collections (${stats.totalBooks})</a>
+        <!-- Clean Underlined Category Bar -->
+        <nav class="category-bar" aria-label="Genres">
+            <a href="${pageContext.request.contextPath}/books" class="active">All Books (${stats.totalBooks})</a>
             <c:forEach var="g" items="${genreBreakdown}">
-                <a href="${pageContext.request.contextPath}/books?genre=${g[0]}" class="genre-pill">${g[0]} (${g[1]})</a>
+                <a href="${pageContext.request.contextPath}/books?genre=${g[0]}">${g[0]} (${g[1]})</a>
             </c:forEach>
-        </div>
+        </nav>
 
-        <!-- Staff Picks & Trending Showcase -->
-        <section class="section-block">
-            <div class="section-header">
-                <div>
-                    <div class="section-kicker">Librarian Curated</div>
-                    <h2 class="section-title">Trending &amp; Staff Picks</h2>
-                    <p class="section-subtitle">Most borrowed editions this month — preview the study guide or check out immediately</p>
-                </div>
-                <a href="${pageContext.request.contextPath}/books" class="btn btn-secondary btn-sm">Explore All ${stats.totalBooks} Books →</a>
+        <!-- Shelf 1: Popular & Staff Picks -->
+        <section>
+            <div class="section-head">
+                <h2>Staff Picks &amp; Popular Editions</h2>
+                <a href="${pageContext.request.contextPath}/books">Browse all ${stats.totalBooks} books →</a>
             </div>
 
-            <div class="books-grid">
+            <div class="shelf-grid">
                 <c:forEach var="book" items="${featuredBooks}">
-                    <article class="book-tile">
-                        <div class="book-tile-cover-wrap">
-                            <a href="${pageContext.request.contextPath}/books/${book.id}" class="real-cover" style="background:${book.coverColor};">
-                                <c:if test="${not empty book.resolvedCoverUrl}">
-                                    <img class="real-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
-                                </c:if>
-                                <span class="cover-ribbon ${book.available ? 'avail' : 'waitlist'}">
-                                    ${book.available ? book.availableCopies : 'Waitlist'}${book.available ? ' avail' : ''}
-                                </span>
-                                <div class="cover-fallback">
-                                    <span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; opacity:0.8;">${book.genre}</span>
-                                    <div>
-                                        <div class="cover-fallback-title">${book.title}</div>
-                                        <div class="cover-fallback-author">${book.author.name}</div>
-                                    </div>
+                    <article class="book-item">
+                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-cover-frame" style="background:${book.coverColor};">
+                            <c:if test="${not empty book.resolvedCoverUrl}">
+                                <img class="book-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
+                            </c:if>
+                            <div class="book-cover-fallback">
+                                <span class="book-cover-fallback-genre">${book.genre}</span>
+                                <div>
+                                    <div class="book-cover-fallback-title">${book.title}</div>
+                                    <div class="book-cover-fallback-author">${book.author.name}</div>
                                 </div>
-                            </a>
-                        </div>
-
-                        <div class="book-tile-meta">
-                            <span>${book.genre} · ${book.formattedReadingTime}</span>
-                            <span style="color:var(--accent);">★ ${book.rating}</span>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-tile-title">${book.title}</a>
-                        <div class="book-tile-author">by ${book.author.name}</div>
-
-                        <div class="book-tile-footer">
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="openReaderPreview(${book.id})">Preview</button>
-                            <a href="${pageContext.request.contextPath}/books/${book.id}" class="btn ${book.available ? 'btn-primary' : 'btn-gold-outline'} btn-sm" style="flex:1;">
-                                ${book.available ? 'Borrow' : 'Join Waitlist'}
-                            </a>
+                            </div>
+                        </a>
+                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-item-title">${book.title}</a>
+                        <div class="book-item-author">${book.author.name}</div>
+                        <div class="book-item-status">
+                            <span class="status-dot ${book.available ? 'avail' : 'wait'}">
+                                ${book.available ? 'Available' : 'Waitlist'}
+                            </span>
+                            <span class="mono">${book.rating} ★</span>
                         </div>
                     </article>
                 </c:forEach>
             </div>
         </section>
 
-        <!-- Quick Weekend Reads (< 315 pages) -->
-        <section class="section-block">
-            <div class="section-header">
-                <div>
-                    <div class="section-kicker">Short &amp; Absorbing</div>
-                    <h2 class="section-title">Finish in a Weekend</h2>
-                    <p class="section-subtitle">Compact masterpieces under 315 pages for focused evening reading</p>
-                </div>
-                <a href="${pageContext.request.contextPath}/books?sort=pages_asc" class="btn btn-secondary btn-sm">Sort by Shortest →</a>
+        <!-- Shelf 2: Shorter Weekend Reads -->
+        <section>
+            <div class="section-head">
+                <h2>Shorter Reads (Under 315 Pages)</h2>
+                <a href="${pageContext.request.contextPath}/books?sort=pages_asc">Sort by length →</a>
             </div>
 
-            <div class="books-grid">
+            <div class="shelf-grid">
                 <c:forEach var="book" items="${quickReads}">
-                    <article class="book-tile">
-                        <div class="book-tile-cover-wrap">
-                            <a href="${pageContext.request.contextPath}/books/${book.id}" class="real-cover" style="background:${book.coverColor};">
-                                <c:if test="${not empty book.resolvedCoverUrl}">
-                                    <img class="real-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
-                                </c:if>
-                                <span class="cover-ribbon ${book.available ? 'avail' : 'waitlist'}">${book.pages}p</span>
-                                <div class="cover-fallback">
-                                    <span style="font-size:0.7rem; text-transform:uppercase; letter-spacing:0.1em; opacity:0.8;">${book.genre}</span>
-                                    <div>
-                                        <div class="cover-fallback-title">${book.title}</div>
-                                        <div class="cover-fallback-author">${book.author.name}</div>
-                                    </div>
+                    <article class="book-item">
+                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-cover-frame" style="background:${book.coverColor};">
+                            <c:if test="${not empty book.resolvedCoverUrl}">
+                                <img class="book-cover-img" src="${book.resolvedCoverUrl}" alt="${book.title}" loading="lazy" onerror="this.style.display='none'">
+                            </c:if>
+                            <div class="book-cover-fallback">
+                                <span class="book-cover-fallback-genre">${book.genre}</span>
+                                <div>
+                                    <div class="book-cover-fallback-title">${book.title}</div>
+                                    <div class="book-cover-fallback-author">${book.author.name}</div>
                                 </div>
-                            </a>
-                        </div>
-                        <div class="book-tile-meta">
-                            <span>${book.formattedReadingTime}</span>
-                            <span style="color:var(--accent);">★ ${book.rating}</span>
-                        </div>
-                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-tile-title">${book.title}</a>
-                        <div class="book-tile-author">by ${book.author.name} · Shelf ${book.shelfLocation}</div>
-                        <div class="book-tile-footer">
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="openReaderPreview(${book.id})">Preview</button>
-                            <a href="${pageContext.request.contextPath}/books/${book.id}" class="btn btn-dark btn-sm" style="flex:1;">View Edition</a>
+                            </div>
+                        </a>
+                        <a href="${pageContext.request.contextPath}/books/${book.id}" class="book-item-title">${book.title}</a>
+                        <div class="book-item-author">${book.author.name}</div>
+                        <div class="book-item-status">
+                            <span>${book.pages} pages · ${book.formattedReadingTime}</span>
                         </div>
                     </article>
                 </c:forEach>
             </div>
         </section>
 
-        <!-- Featured Authors -->
-        <section class="section-block" style="margin-bottom:1.5rem;">
-            <div class="section-header">
-                <div>
-                    <div class="section-kicker">Author Spotlight</div>
-                    <h2 class="section-title">Voices in the Archive</h2>
-                    <p class="section-subtitle">Explore biographies, honors, and linked collections by author</p>
-                </div>
-                <a href="${pageContext.request.contextPath}/authors" class="btn btn-secondary btn-sm">All ${stats.totalAuthors} Authors →</a>
+        <!-- Shelf 3: Authors in Archive -->
+        <section>
+            <div class="section-head">
+                <h2>Authors in the Collection</h2>
+                <a href="${pageContext.request.contextPath}/authors">All ${stats.totalAuthors} authors →</a>
             </div>
 
-            <div class="authors-grid">
+            <div class="author-list-grid">
                 <c:forEach var="author" items="${spotlightAuthors}">
-                    <a href="${pageContext.request.contextPath}/authors/${author.id}" class="author-card">
-                        <div class="author-header">
-                            <div class="author-monogram" style="background:${author.avatarColor};">${author.initials}</div>
+                    <a href="${pageContext.request.contextPath}/authors/${author.id}" class="author-tile">
+                        <div class="author-head">
+                            <div class="author-circle" style="background:${author.avatarColor};">${author.initials}</div>
                             <div>
-                                <h3 style="font-size:1.05rem; font-weight:700;">${author.name}</h3>
-                                <div style="font-size:0.8rem; color:var(--text-muted);">${author.nationality} · b. ${author.birthYear}</div>
+                                <div style="font-weight:600; font-size:0.96rem;">${author.name}</div>
+                                <div style="font-size:0.8rem; color:var(--ink-3);">${author.nationality} · ${author.books.size()} title(s)</div>
                             </div>
                         </div>
-                        <p style="font-size:0.86rem; color:var(--text-soft); flex:1;">${author.biography}</p>
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                            <c:if test="${not empty author.notableAward}">
-                                <span class="badge badge-neutral" style="font-size:0.7rem;">${author.notableAward}</span>
-                            </c:if>
-                            <span class="mono" style="font-size:0.77rem; color:var(--accent); font-weight:700; margin-left:auto;">${author.books.size()} Title(s) →</span>
-                        </div>
+                        <p style="font-size:0.85rem; color:var(--ink-2);">${author.biography}</p>
                     </a>
                 </c:forEach>
             </div>
