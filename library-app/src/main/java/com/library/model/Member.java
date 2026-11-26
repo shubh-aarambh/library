@@ -34,6 +34,9 @@ public class Member {
     @Column(name = "membership_tier", nullable = false, length = 30)
     private String membershipTier = "STANDARD"; // STANDARD, SCHOLAR, VIP
 
+    @Column(name = "annual_reading_goal", nullable = false)
+    private Integer annualReadingGoal = 12;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -49,6 +52,7 @@ public class Member {
         this.passwordHash = passwordHash;
         this.role = role != null ? role : "MEMBER";
         this.membershipTier = membershipTier != null ? membershipTier : "STANDARD";
+        this.annualReadingGoal = "VIP".equalsIgnoreCase(this.membershipTier) ? 24 : 12;
         this.active = true;
         this.joinedAt = LocalDateTime.now();
     }
@@ -66,6 +70,11 @@ public class Member {
             return parts[0].substring(0, Math.min(2, parts[0].length())).toUpperCase();
         }
         return (parts[0].substring(0, 1) + parts[parts.length - 1].substring(0, 1)).toUpperCase();
+    }
+
+    public String getLibraryCardNumber() {
+        long num = id != null ? id : 1L;
+        return String.format("ATH-2026-%04d", num);
     }
 
     public String getFormattedJoinedDate() {
@@ -129,6 +138,14 @@ public class Member {
         this.membershipTier = membershipTier;
     }
 
+    public Integer getAnnualReadingGoal() {
+        return annualReadingGoal != null ? annualReadingGoal : 12;
+    }
+
+    public void setAnnualReadingGoal(Integer annualReadingGoal) {
+        this.annualReadingGoal = annualReadingGoal != null ? Math.min(200, Math.max(1, annualReadingGoal)) : 12;
+    }
+
     public Boolean getActive() {
         return active != null && active;
     }
@@ -145,4 +162,3 @@ public class Member {
         this.joinedAt = joinedAt;
     }
 }
-

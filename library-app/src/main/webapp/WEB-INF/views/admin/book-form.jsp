@@ -12,13 +12,13 @@
 
 <div class="section-header">
     <div>
-        <h1 class="section-title" style="font-size:1.75rem;">${pageTitle}</h1>
-        <p class="section-subtitle">Configure bibliographic details, shelf location, and inventory counts</p>
+        <h1 class="section-title" style="font-size:2rem;">${pageTitle}</h1>
+        <p class="section-subtitle">Configure bibliographic details, format, cover artwork, shelf location, and reader guide</p>
     </div>
-    <a href="${pageContext.request.contextPath}/admin/books" class="btn btn-secondary btn-sm">← Back to Inventory</a>
+    <a href="${pageContext.request.contextPath}/admin/books" class="btn btn-secondary btn-sm">← Back to Books</a>
 </div>
 
-<div class="card" style="max-width:860px;">
+<div class="card" style="max-width:880px;">
     <form:form action="${pageContext.request.contextPath}${formAction}" method="post" modelAttribute="book">
         <div class="form-group">
             <label for="title">Book Title *</label>
@@ -76,13 +76,21 @@
             </div>
         </div>
 
-        <div class="form-grid-2">
+        <div class="form-grid-3">
+            <div class="form-group">
+                <label for="format">Edition Format</label>
+                <form:select path="format" id="format" cssClass="form-control">
+                    <form:option value="BOTH" label="Print + Digital"/>
+                    <form:option value="PHYSICAL" label="Print Shelf Only"/>
+                    <form:option value="DIGITAL" label="E-Book Only"/>
+                </form:select>
+            </div>
             <div class="form-group">
                 <label for="language">Language</label>
                 <form:input path="language" id="language" cssClass="form-control"/>
             </div>
             <div class="form-group">
-                <label for="coverColor">Hardcover Palette</label>
+                <label for="coverColor">Fallback Jacket Color</label>
                 <form:select path="coverColor" id="coverColor" cssClass="form-control">
                     <form:option value="linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%)" label="Midnight Navy"/>
                     <form:option value="linear-gradient(145deg, #1b4332 0%, #081c15 100%)" label="Forest Emerald"/>
@@ -95,14 +103,29 @@
         </div>
 
         <div class="form-group">
-            <label for="description">Editorial Synopsis</label>
-            <form:textarea path="description" id="description" cssClass="form-control" rows="4"/>
+            <label for="coverImageUrl">Custom Cover Image URL (Optional — auto-resolved from ISBN if blank)</label>
+            <form:input path="coverImageUrl" id="coverImageUrl" cssClass="form-control" placeholder="https://covers.openlibrary.org/..."/>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Synopsis</label>
+            <form:textarea path="description" id="description" cssClass="form-control" rows="3"/>
+        </div>
+
+        <div class="form-group">
+            <label for="librarianNote">Librarian Recommendation Note</label>
+            <form:textarea path="librarianNote" id="librarianNote" cssClass="form-control" rows="2" placeholder="Why readers love this edition..."/>
+        </div>
+
+        <div class="form-group">
+            <label for="previewGuide">E-Reader Study Guide &amp; Discussion Notes</label>
+            <form:textarea path="previewGuide" id="previewGuide" cssClass="form-control" rows="4" placeholder="Themes, orientation, and discussion prompts for the built-in E-Reader modal..."/>
         </div>
 
         <div class="form-group" style="display:flex; align-items:center; gap:10px;">
             <form:checkbox path="featured" id="featured"/>
             <label for="featured" style="margin:0; text-transform:none; letter-spacing:0; font-size:0.9rem;">
-                Feature on Homepage Staff Picks
+                Feature on Homepage Trending &amp; Staff Picks
             </label>
         </div>
 
@@ -116,4 +139,3 @@
 <jsp:include page="/WEB-INF/views/fragments/admin-layout-end.jsp"/>
 </body>
 </html>
-

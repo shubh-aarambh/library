@@ -8,3 +8,4 @@ Full-stack **Spring Boot** digital library platform located in [`library-app/`](
 - **43 Automated Tests** (JUnit 5, Mockito, `@DataJpaTest`, MockMvc RBAC integration tests) and multi-stage **Docker + Render** deployment (`render.yaml`).
 
 See [`library-app/README.md`](./library-app/README.md) for complete documentation, demo credentials, and local setup instructions.
+

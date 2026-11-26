@@ -27,9 +27,13 @@ public interface BookService {
 
     List<Book> getTopRatedBooks();
 
+    List<Book> getQuickReads();
+
     List<Book> filterBooks(String query, String genre, String availability, String sort);
 
     Book toggleFeatured(Long id);
+
+    Book adjustCopies(Long id, int delta);
 
     List<Object[]> getGenreBreakdown();
 }

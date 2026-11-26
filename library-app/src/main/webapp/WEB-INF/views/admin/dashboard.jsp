@@ -15,12 +15,17 @@
     <div class="kpi-card">
         <div class="kpi-label">Catalog Titles</div>
         <div class="kpi-num">${stats.totalBooks}</div>
-        <div class="kpi-meta">${stats.availableCopies}/${stats.totalCopies} copies on shelf</div>
+        <div class="kpi-meta">${stats.availableCopies}/${stats.totalCopies} shelf copies free</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Active Circulation</div>
         <div class="kpi-num" style="color:var(--sky);">${stats.openLoans}</div>
-        <div class="kpi-meta">${stats.utilizationPct}% inventory utilization</div>
+        <div class="kpi-meta">${stats.utilizationPct}% stock utilization</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Waitlist Holds</div>
+        <div class="kpi-num" style="color:var(--accent);">${stats.openHolds}</div>
+        <div class="kpi-meta">${stats.readyHolds} ready · ${stats.waitingHolds} waiting</div>
     </div>
     <div class="kpi-card">
         <div class="kpi-label">Overdue &amp; Fines</div>
@@ -28,31 +33,26 @@
         <div class="kpi-meta">$${stats.unpaidFines} unpaid fines</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Authors Registry</div>
-        <div class="kpi-num">${stats.totalAuthors}</div>
-        <div class="kpi-meta">${stats.totalGenres} distinct genres</div>
-    </div>
-    <div class="kpi-card">
         <div class="kpi-label">Registered Members</div>
         <div class="kpi-num" style="color:var(--emerald);">${stats.totalMembers}</div>
         <div class="kpi-meta">${stats.activeMembers} active cards</div>
     </div>
     <div class="kpi-card">
-        <div class="kpi-label">Catalog Rating</div>
-        <div class="kpi-num" style="color:var(--gold);">${stats.avgRating} ★</div>
+        <div class="kpi-label">Avg Rating</div>
+        <div class="kpi-num" style="color:var(--accent);">${stats.avgRating} ★</div>
         <div class="kpi-meta">${stats.returnedLoans} completed loans</div>
     </div>
 </div>
 
-<!-- Analytics Charts -->
+<!-- Charts Row -->
 <div class="dashboard-split">
     <div class="card">
         <div class="section-header" style="margin-bottom:1rem;">
             <div>
                 <div class="section-kicker">Collection Mix</div>
-                <h2 class="serif" style="font-size:1.35rem;">Catalog Distribution by Genre</h2>
+                <h2 class="serif" style="font-size:1.55rem;">Catalog by Genre</h2>
             </div>
-            <a href="${pageContext.request.contextPath}/admin/books" class="btn btn-secondary btn-sm">Manage Books</a>
+            <a href="${pageContext.request.contextPath}/admin/books" class="btn btn-secondary btn-sm">Manage Stock</a>
         </div>
         <div class="chart-box">
             <canvas id="genreChart"></canvas>
@@ -62,10 +62,10 @@
     <div class="card">
         <div class="section-header" style="margin-bottom:1rem;">
             <div>
-                <div class="section-kicker">Circulation Health</div>
-                <h2 class="serif" style="font-size:1.35rem;">Loan Lifecycle Overview</h2>
+                <div class="section-kicker">Operations Telemetry</div>
+                <h2 class="serif" style="font-size:1.55rem;">Circulation &amp; Holds Health</h2>
             </div>
-            <a href="${pageContext.request.contextPath}/admin/loans" class="btn btn-gold-outline btn-sm">Open Desk</a>
+            <a href="${pageContext.request.contextPath}/admin/loans" class="btn btn-gold-outline btn-sm">Circulation Desk</a>
         </div>
         <div class="chart-box">
             <canvas id="loanChart"></canvas>
@@ -73,15 +73,18 @@
     </div>
 </div>
 
-<!-- Recent Loans + Audit Feed -->
+<!-- Recent Loans & Audit Feed -->
 <div class="dashboard-split">
     <div class="card">
         <div class="section-header" style="margin-bottom:1rem;">
             <div>
-                <div class="section-kicker">Circulation Desk</div>
-                <h2 class="serif" style="font-size:1.35rem;">Recent Loans</h2>
+                <div class="section-kicker">Front Desk</div>
+                <h2 class="serif" style="font-size:1.55rem;">Recent Loans &amp; Holds</h2>
             </div>
-            <a href="${pageContext.request.contextPath}/admin/loans" class="btn btn-secondary btn-sm">View All →</a>
+            <div style="display:flex; gap:6px;">
+                <a href="${pageContext.request.contextPath}/admin/holds" class="btn btn-gold-outline btn-sm">Holds (${stats.openHolds})</a>
+                <a href="${pageContext.request.contextPath}/admin/loans" class="btn btn-secondary btn-sm">All Loans</a>
+            </div>
         </div>
         <div class="table-wrapper">
             <table>
@@ -89,7 +92,7 @@
                     <tr>
                         <th>Book</th>
                         <th>Member</th>
-                        <th>Due Date</th>
+                        <th>Pass / Due</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -98,12 +101,12 @@
                         <tr>
                             <td><strong>${loan.book.title}</strong></td>
                             <td>${loan.member.fullName}</td>
-                            <td class="mono" style="font-size:0.8rem;">${loan.formattedDueDate}</td>
+                            <td class="mono" style="font-size:0.78rem;">${loan.pickupCode} · ${loan.formattedDueDate}</td>
                             <td>
                                 <c:choose>
                                     <c:when test="${loan.status == 'OVERDUE'}"><span class="badge badge-danger">Overdue</span></c:when>
                                     <c:when test="${loan.status == 'RETURNED'}"><span class="badge badge-neutral">Returned</span></c:when>
-                                    <c:otherwise><span class="badge badge-emerald">Active</span></c:otherwise>
+                                    <c:otherwise><span class="badge badge-emerald">Active (${loan.readingProgress}%)</span></c:otherwise>
                                 </c:choose>
                             </td>
                         </tr>
@@ -116,8 +119,8 @@
     <div class="card">
         <div class="section-header" style="margin-bottom:1rem;">
             <div>
-                <div class="section-kicker">Live Telemetry</div>
-                <h2 class="serif" style="font-size:1.35rem;">Audit Activity Stream</h2>
+                <div class="section-kicker">Live Stream</div>
+                <h2 class="serif" style="font-size:1.55rem;">Audit Activity</h2>
             </div>
             <a href="${pageContext.request.contextPath}/admin/audit" class="btn btn-secondary btn-sm">Full Log</a>
         </div>
@@ -142,6 +145,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         if (typeof Chart === 'undefined') return;
 
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        var labelColor = isDark ? '#a4b1c5' : '#4c5667';
+        var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(20,25,35,0.08)';
+
         var genreLabels = [
             <c:forEach var="g" items="${genreBreakdown}" varStatus="st">'${g[0]}'<c:if test="${!st.last}">,</c:if></c:forEach>
         ];
@@ -149,18 +156,13 @@
             <c:forEach var="g" items="${genreBreakdown}" varStatus="st">${g[1]}<c:if test="${!st.last}">,</c:if></c:forEach>
         ];
 
-        var palette = ['#e5a93c', '#38bdf8', '#10b981', '#a78bfa', '#f97316', '#ec4899', '#14b8a6', '#ef4444', '#6366f1'];
+        var palette = ['#c25e28', '#0e7c5b', '#1d6fa5', '#6246c9', '#d97706', '#be185d', '#0f766e', '#c8333a', '#4338ca'];
 
         new Chart(document.getElementById('genreChart'), {
             type: 'doughnut',
             data: {
                 labels: genreLabels,
-                datasets: [{
-                    data: genreCounts,
-                    backgroundColor: palette,
-                    borderWidth: 0,
-                    hoverOffset: 8
-                }]
+                datasets: [{ data: genreCounts, backgroundColor: palette, borderWidth: 0, hoverOffset: 8 }]
             },
             options: {
                 responsive: true,
@@ -169,7 +171,7 @@
                 plugins: {
                     legend: {
                         position: 'right',
-                        labels: { color: '#9fb0c8', boxWidth: 12, padding: 14, font: { family: 'Plus Jakarta Sans', size: 12 } }
+                        labels: { color: labelColor, boxWidth: 12, padding: 12, font: { family: 'Plus Jakarta Sans', size: 12 } }
                     }
                 }
             }
@@ -178,13 +180,13 @@
         new Chart(document.getElementById('loanChart'), {
             type: 'bar',
             data: {
-                labels: ['Active Loans', 'Overdue', 'Returned', 'Available Copies'],
+                labels: ['Active Loans', 'Overdue', 'Open Holds', 'Returned', 'On Shelf'],
                 datasets: [{
                     label: 'Count',
-                    data: [${stats.activeLoans}, ${stats.overdueLoans}, ${stats.returnedLoans}, ${stats.availableCopies}],
-                    backgroundColor: ['#38bdf8', '#ef4444', '#10b981', '#e5a93c'],
+                    data: [${stats.activeLoans}, ${stats.overdueLoans}, ${stats.openHolds}, ${stats.returnedLoans}, ${stats.availableCopies}],
+                    backgroundColor: ['#1d6fa5', '#c8333a', '#c25e28', '#6246c9', '#0e7c5b'],
                     borderRadius: 8,
-                    maxBarThickness: 46
+                    maxBarThickness: 42
                 }]
             },
             options: {
@@ -192,8 +194,8 @@
                 maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,0.1)' }, ticks: { color: '#9fb0c8' } },
-                    x: { grid: { display: false }, ticks: { color: '#9fb0c8' } }
+                    y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: labelColor } },
+                    x: { grid: { display: false }, ticks: { color: labelColor } }
                 }
             }
         });
@@ -203,4 +205,3 @@
 <jsp:include page="/WEB-INF/views/fragments/admin-layout-end.jsp"/>
 </body>
 </html>
-

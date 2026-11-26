@@ -30,9 +30,17 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model) {
         List<Book> featuredBooks = bookService.getFeaturedBooks().stream().limit(6).collect(Collectors.toList());
+        List<Book> heroStack = featuredBooks.stream().limit(3).collect(Collectors.toList());
+        List<Book> quickReads = bookService.getQuickReads().stream().limit(4).collect(Collectors.toList());
+        List<Book> availableNow = bookService.filterBooks(null, "ALL", "AVAILABLE", "rating")
+                .stream().limit(4).collect(Collectors.toList());
         List<Author> spotlightAuthors = authorService.getAuthorsWithAtLeastOneBook().stream().limit(6).collect(Collectors.toList());
+
         model.addAttribute("stats", libraryOpsService.getLibraryStats());
+        model.addAttribute("heroStack", heroStack);
         model.addAttribute("featuredBooks", featuredBooks);
+        model.addAttribute("quickReads", quickReads);
+        model.addAttribute("availableNow", availableNow);
         model.addAttribute("spotlightAuthors", spotlightAuthors);
         model.addAttribute("genres", bookService.getAllGenres());
         model.addAttribute("genreBreakdown", bookService.getGenreBreakdown());

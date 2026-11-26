@@ -60,6 +60,9 @@ public class BookServiceImpl implements BookService {
         if (book.getCoverColor() == null || book.getCoverColor().isBlank()) {
             book.setCoverColor("linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%)");
         }
+        if (book.getFormat() == null || book.getFormat().isBlank()) {
+            book.setFormat("BOTH");
+        }
         return bookRepository.save(book);
     }
 
@@ -90,8 +93,20 @@ public class BookServiceImpl implements BookService {
         if (updatedBook.getShelfLocation() != null && !updatedBook.getShelfLocation().isBlank()) {
             existing.setShelfLocation(updatedBook.getShelfLocation());
         }
+        if (updatedBook.getFormat() != null && !updatedBook.getFormat().isBlank()) {
+            existing.setFormat(updatedBook.getFormat());
+        }
         if (updatedBook.getCoverColor() != null && !updatedBook.getCoverColor().isBlank()) {
             existing.setCoverColor(updatedBook.getCoverColor());
+        }
+        if (updatedBook.getCoverImageUrl() != null) {
+            existing.setCoverImageUrl(updatedBook.getCoverImageUrl());
+        }
+        if (updatedBook.getLibrarianNote() != null) {
+            existing.setLibrarianNote(updatedBook.getLibrarianNote());
+        }
+        if (updatedBook.getPreviewGuide() != null) {
+            existing.setPreviewGuide(updatedBook.getPreviewGuide());
         }
         if (updatedBook.getFeatured() != null) {
             existing.setFeatured(updatedBook.getFeatured());
@@ -151,6 +166,16 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<Book> getQuickReads() {
+        return bookRepository.findAll().stream()
+                .filter(b -> b.getPages() != null && b.getPages() <= 315)
+                .sorted(Comparator.comparing(Book::getPages))
+                .limit(6)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<Book> filterBooks(String query, String genre, String availability, String sort) {
         String q = query != null ? query.trim().toLowerCase() : "";
         String g = genre != null ? genre.trim() : "";
@@ -172,6 +197,9 @@ public class BookServiceImpl implements BookService {
             case "available":
                 comparator = Comparator.comparing(Book::getAvailableCopies, Comparator.reverseOrder())
                         .thenComparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+                break;
+            case "pages_asc":
+                comparator = Comparator.comparing(Book::getPages);
                 break;
             default:
                 comparator = Comparator.comparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
@@ -200,6 +228,16 @@ public class BookServiceImpl implements BookService {
     public Book toggleFeatured(Long id) {
         Book book = getBookById(id);
         book.setFeatured(!book.getFeatured());
+        return bookRepository.save(book);
+    }
+
+    @Override
+    public Book adjustCopies(Long id, int delta) {
+        Book book = getBookById(id);
+        int newTotal = Math.max(1, book.getTotalCopies() + delta);
+        int newAvail = Math.min(newTotal, Math.max(0, book.getAvailableCopies() + delta));
+        book.setTotalCopies(newTotal);
+        book.setAvailableCopies(newAvail);
         return bookRepository.save(book);
     }
 

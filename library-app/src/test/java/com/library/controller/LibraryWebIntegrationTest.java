@@ -15,14 +15,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@DisplayName("Web & Admin RBAC Integration Tests")
+@DisplayName("Web, Search, E-Reader & Admin RBAC Integration Tests")
 class LibraryWebIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Public routes and REST API endpoints return 200 OK")
+    @DisplayName("Public routes, live Cmd+K search API, and E-Reader preview API return 200 OK")
     void testPublicRoutesAndApis() throws Exception {
         mockMvc.perform(get("/")).andExpect(status().isOk()).andExpect(view().name("index"));
         mockMvc.perform(get("/books")).andExpect(status().isOk()).andExpect(view().name("books/list"));
@@ -31,6 +31,12 @@ class LibraryWebIntegrationTest {
         mockMvc.perform(get("/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
+        mockMvc.perform(get("/api/search").param("q", "Dune"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.books[0].title").value("Dune"));
+        mockMvc.perform(get("/api/books/1/preview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.previewGuide").isNotEmpty());
         mockMvc.perform(get("/api/books")).andExpect(status().isOk());
         mockMvc.perform(get("/api/stats")).andExpect(status().isOk());
         mockMvc.perform(get("/api/books/export.csv"))
@@ -47,7 +53,7 @@ class LibraryWebIntegrationTest {
     }
 
     @Test
-    @DisplayName("Demo admin login grants access to Admin Console routes")
+    @DisplayName("Demo admin login grants access to all Admin Console routes including Holds Queue")
     void testAdminDemoLoginAccess() throws Exception {
         MockHttpSession session = (MockHttpSession) mockMvc.perform(post("/admin/demo-login"))
                 .andExpect(status().is3xxRedirection())
@@ -65,6 +71,10 @@ class LibraryWebIntegrationTest {
         mockMvc.perform(get("/admin/loans").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/loans"));
+
+        mockMvc.perform(get("/admin/holds").session(session))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/holds"));
 
         mockMvc.perform(get("/admin/members").session(session))
                 .andExpect(status().isOk())
@@ -91,4 +101,3 @@ class LibraryWebIntegrationTest {
                 .andExpect(redirectedUrl("/admin/login?required=true"));
     }
 }
-

@@ -36,7 +36,7 @@ public class BookController {
     public String listBooks(@RequestParam(required = false) String q,
                             @RequestParam(required = false) String genre,
                             @RequestParam(required = false, defaultValue = "ALL") String availability,
-                            @RequestParam(required = false, defaultValue = "title") String sort,
+                            @RequestParam(required = false, defaultValue = "rating") String sort,
                             @RequestParam(required = false, defaultValue = "grid") String view,
                             Model model) {
         List<Book> books = bookService.filterBooks(q, genre, availability, sort);
@@ -48,11 +48,11 @@ public class BookController {
         model.addAttribute("selectedSort", sort);
         model.addAttribute("viewMode", view);
         model.addAttribute("stats", libraryOpsService.getLibraryStats());
-        model.addAttribute("pageTitle", "Book Catalog");
+        model.addAttribute("pageTitle", "Library Catalog");
         return "books/list";
     }
 
-    // READ - Book Detail page with borrow, reading list, and reader reviews
+    // READ - Book Detail page with borrow, waitlist hold, preview guide, reading list, and reviews
     @GetMapping("/{id}")
     public String viewBook(@PathVariable Long id, HttpServletRequest request, Model model) {
         Book book = bookService.getBookById(id);
@@ -60,15 +60,17 @@ public class BookController {
         model.addAttribute("book", book);
         model.addAttribute("reviews", libraryOpsService.getReviewsForBook(id));
         model.addAttribute("moreByAuthor", bookService.getBooksByAuthorId(book.getAuthor().getId()));
+        model.addAttribute("waitlistCount", libraryOpsService.getWaitingCountForBook(id));
         if (currentUser != null) {
             model.addAttribute("inReadingList", libraryOpsService.isInReadingList(currentUser.getId(), id));
             model.addAttribute("hasActiveLoan", libraryOpsService.hasActiveLoanForBook(currentUser.getId(), id));
+            model.addAttribute("hasActiveHold", libraryOpsService.hasActiveHoldForBook(currentUser.getId(), id));
         }
         model.addAttribute("pageTitle", book.getTitle());
         return "books/detail";
     }
 
-    // MEMBER ACTION - Borrow a book directly from detail/catalog page
+    // MEMBER ACTION - Borrow a book
     @PostMapping("/{id}/borrow")
     public String borrowBook(@PathVariable Long id,
                              @RequestParam(required = false, defaultValue = "14") Integer days,
@@ -76,12 +78,34 @@ public class BookController {
                              RedirectAttributes redirectAttributes) {
         Member currentUser = (Member) request.getAttribute("currentUser");
         if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("infoMessage", "Please sign in (or use 1-Click Demo Reader) to borrow books.");
+            redirectAttributes.addFlashAttribute("infoMessage", "Sign in (or click 1-Click Demo Reader) to borrow this book.");
             return "redirect:/login?next=/books/" + id;
         }
         try {
-            libraryOpsService.borrowBook(id, currentUser.getId(), days, "Self-service checkout via catalog", currentUser.getFullName());
-            redirectAttributes.addFlashAttribute("successMessage", "Book checked out! View due dates & manage loans in My Library.");
+            var loan = libraryOpsService.borrowBook(id, currentUser.getId(), days,
+                    "Self-service checkout via catalog", currentUser.getFullName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Checked out! Pickup Pass: " + loan.getPickupCode() + " · View your QR pass & reading tracker in My Library.");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/books/" + id;
+    }
+
+    // MEMBER ACTION - Join Waitlist / Place Hold when copies are out
+    @PostMapping("/{id}/hold")
+    public String placeHold(@PathVariable Long id,
+                            HttpServletRequest request,
+                            RedirectAttributes redirectAttributes) {
+        Member currentUser = (Member) request.getAttribute("currentUser");
+        if (currentUser == null) {
+            redirectAttributes.addFlashAttribute("infoMessage", "Sign in (or use Demo Reader) to join the waitlist.");
+            return "redirect:/login?next=/books/" + id;
+        }
+        try {
+            var hold = libraryOpsService.placeHold(id, currentUser.getId());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Hold placed! You're in the waitlist queue (Status: " + hold.getStatus() + "). Track it in My Library.");
         } catch (IllegalStateException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
         }
@@ -95,12 +119,12 @@ public class BookController {
                                     RedirectAttributes redirectAttributes) {
         Member currentUser = (Member) request.getAttribute("currentUser");
         if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("infoMessage", "Please sign in to save books to your Reading List.");
+            redirectAttributes.addFlashAttribute("infoMessage", "Sign in to bookmark titles to your Reading List.");
             return "redirect:/login?next=/books/" + id;
         }
         boolean added = libraryOpsService.toggleReadingList(currentUser.getId(), id);
         redirectAttributes.addFlashAttribute("successMessage",
-                added ? "Added to your Reading List!" : "Removed from your Reading List.");
+                added ? "Saved to your Reading List!" : "Removed from your Reading List.");
         return "redirect:/books/" + id;
     }
 
@@ -113,7 +137,7 @@ public class BookController {
                             RedirectAttributes redirectAttributes) {
         Member currentUser = (Member) request.getAttribute("currentUser");
         if (currentUser == null) {
-            redirectAttributes.addFlashAttribute("infoMessage", "Please sign in to post a reader review.");
+            redirectAttributes.addFlashAttribute("infoMessage", "Sign in to publish a reader review.");
             return "redirect:/login?next=/books/" + id;
         }
         if (comment == null || comment.trim().length() < 5) {

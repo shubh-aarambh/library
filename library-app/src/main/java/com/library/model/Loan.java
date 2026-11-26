@@ -42,6 +42,12 @@ public class Loan {
     @Column(name = "fine_paid", nullable = false)
     private Boolean finePaid = false;
 
+    @Column(name = "reading_progress", nullable = false)
+    private Integer readingProgress = 0;
+
+    @Column(name = "pickup_code", length = 24)
+    private String pickupCode;
+
     @Column(length = 300)
     private String notes;
 
@@ -56,7 +62,14 @@ public class Loan {
         this.status = "ACTIVE";
         this.fineAmount = 0.0;
         this.finePaid = false;
+        this.readingProgress = 0;
+        this.pickupCode = generatePickupCode();
         this.notes = notes;
+    }
+
+    private static String generatePickupCode() {
+        int code = 1000 + (int) (Math.random() * 9000);
+        return "ATH-" + code;
     }
 
     public boolean isOverdueNow() {
@@ -169,6 +182,22 @@ public class Loan {
         this.finePaid = finePaid != null && finePaid;
     }
 
+    public Integer getReadingProgress() {
+        return readingProgress != null ? readingProgress : 0;
+    }
+
+    public void setReadingProgress(Integer readingProgress) {
+        this.readingProgress = readingProgress != null ? Math.min(100, Math.max(0, readingProgress)) : 0;
+    }
+
+    public String getPickupCode() {
+        return pickupCode != null ? pickupCode : "ATH-1024";
+    }
+
+    public void setPickupCode(String pickupCode) {
+        this.pickupCode = pickupCode;
+    }
+
     public String getNotes() {
         return notes;
     }
@@ -177,4 +206,3 @@ public class Loan {
         this.notes = notes;
     }
 }
-

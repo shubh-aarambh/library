@@ -21,6 +21,7 @@ public class LibraryOpsService {
     private final LoanRepository loanRepository;
     private final BookReviewRepository reviewRepository;
     private final ReadingListRepository readingListRepository;
+    private final HoldRequestRepository holdRequestRepository;
     private final ActivityLogRepository activityLogRepository;
 
     public LibraryOpsService(BookRepository bookRepository,
@@ -29,6 +30,7 @@ public class LibraryOpsService {
                              LoanRepository loanRepository,
                              BookReviewRepository reviewRepository,
                              ReadingListRepository readingListRepository,
+                             HoldRequestRepository holdRequestRepository,
                              ActivityLogRepository activityLogRepository) {
         this.bookRepository = bookRepository;
         this.authorRepository = authorRepository;
@@ -36,6 +38,7 @@ public class LibraryOpsService {
         this.loanRepository = loanRepository;
         this.reviewRepository = reviewRepository;
         this.readingListRepository = readingListRepository;
+        this.holdRequestRepository = holdRequestRepository;
         this.activityLogRepository = activityLogRepository;
     }
 
@@ -95,6 +98,12 @@ public class LibraryOpsService {
         return saved;
     }
 
+    public Member updateReadingGoal(Long memberId, int goal) {
+        Member member = getMemberById(memberId);
+        member.setAnnualReadingGoal(goal);
+        return memberRepository.save(member);
+    }
+
     public Member toggleMemberStatus(Long memberId, String adminName) {
         Member member = getMemberById(memberId);
         member.setActive(!member.getActive());
@@ -117,7 +126,7 @@ public class LibraryOpsService {
             throw new IllegalStateException("Member account is suspended and cannot borrow books.");
         }
         if (!book.isAvailable()) {
-            throw new IllegalStateException("No copies of \"" + book.getTitle() + "\" are currently available.");
+            throw new IllegalStateException("All copies of \"" + book.getTitle() + "\" are checked out. Join the waitlist instead!");
         }
         if (loanRepository.countActiveLoanForMemberAndBook(memberId, bookId) > 0) {
             throw new IllegalStateException(member.getFullName() + " already has an active loan for \"" + book.getTitle() + "\".");
@@ -134,7 +143,7 @@ public class LibraryOpsService {
         Loan loan = new Loan(book, member, LocalDate.now().plusDays(days), notes);
         Loan saved = loanRepository.save(loan);
         logActivity("BOOK_BORROWED", "CIRCULATION", actorName,
-                member.getFullName() + " borrowed \"" + book.getTitle() + "\" (Due " + saved.getFormattedDueDate() + ")");
+                member.getFullName() + " borrowed \"" + book.getTitle() + "\" (Pass " + saved.getPickupCode() + ", Due " + saved.getFormattedDueDate() + ")");
         return saved;
     }
 
@@ -158,6 +167,17 @@ public class LibraryOpsService {
         logActivity("BOOK_RETURNED", "CIRCULATION", actorName,
                 "\"" + book.getTitle() + "\" returned by " + loan.getMember().getFullName()
                         + (fine > 0 ? String.format(" (Fine: $%.2f)", fine) : ""));
+
+        // Auto-promote next member in Waitlist Hold Queue if someone is waiting!
+        List<HoldRequest> queue = holdRequestRepository.findWaitingQueueForBook(book.getId());
+        if (!queue.isEmpty()) {
+            HoldRequest nextHold = queue.get(0);
+            nextHold.setStatus("READY");
+            nextHold.setNotifiedAt(LocalDateTime.now());
+            holdRequestRepository.save(nextHold);
+            logActivity("HOLD_READY", "CIRCULATION", "System",
+                    "Notified " + nextHold.getMember().getFullName() + " that \"" + book.getTitle() + "\" is ready for pickup!");
+        }
         return saved;
     }
 
@@ -175,6 +195,16 @@ public class LibraryOpsService {
                 "Extended \"" + loan.getBook().getTitle() + "\" for " + loan.getMember().getFullName()
                         + " until " + saved.getFormattedDueDate());
         return saved;
+    }
+
+    public Loan updateLoanProgress(Long loanId, Long memberId, int progress) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new ResourceNotFoundException("Loan not found with id: " + loanId));
+        if (!loan.getMember().getId().equals(memberId)) {
+            throw new IllegalStateException("You can only update reading progress on your own loans.");
+        }
+        loan.setReadingProgress(progress);
+        return loanRepository.save(loan);
     }
 
     public Loan markFinePaid(Long loanId, String adminName) {
@@ -200,6 +230,77 @@ public class LibraryOpsService {
             }
         }
         return updated;
+    }
+
+    // =====================================================
+    // Waitlist / Hold Queue
+    // =====================================================
+
+    public HoldRequest placeHold(Long bookId, Long memberId) {
+        Book book = bookRepository.findById(bookId)
+                .orElseThrow(() -> new ResourceNotFoundException("Book not found with id: " + bookId));
+        Member member = getMemberById(memberId);
+
+        if (loanRepository.countActiveLoanForMemberAndBook(memberId, bookId) > 0) {
+            throw new IllegalStateException("You already have this book checked out.");
+        }
+        if (holdRequestRepository.countActiveHoldForMemberAndBook(memberId, bookId) > 0) {
+            throw new IllegalStateException("You already have an active hold on \"" + book.getTitle() + "\".");
+        }
+        HoldRequest hold = new HoldRequest(book, member);
+        if (book.isAvailable()) {
+            hold.setStatus("READY");
+            hold.setNotifiedAt(LocalDateTime.now());
+        }
+        HoldRequest saved = holdRequestRepository.save(hold);
+        logActivity("HOLD_PLACED", "CIRCULATION", member.getFullName(),
+                "Joined waitlist for \"" + book.getTitle() + "\" (Status: " + saved.getStatus() + ")");
+        return saved;
+    }
+
+    public void cancelHold(Long holdId, Long memberId, boolean isAdmin, String actorName) {
+        HoldRequest hold = holdRequestRepository.findById(holdId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hold request not found with id: " + holdId));
+        if (!isAdmin && !hold.getMember().getId().equals(memberId)) {
+            throw new IllegalStateException("Cannot cancel another member's hold.");
+        }
+        hold.setStatus("CANCELLED");
+        holdRequestRepository.save(hold);
+        logActivity("HOLD_CANCELLED", "CIRCULATION", actorName,
+                "Cancelled waitlist hold for \"" + hold.getBook().getTitle() + "\"");
+    }
+
+    public Loan fulfillHold(Long holdId, String adminName) {
+        HoldRequest hold = holdRequestRepository.findById(holdId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hold request not found with id: " + holdId));
+        Loan loan = borrowBook(hold.getBook().getId(), hold.getMember().getId(), 14,
+                "Fulfilled from Waitlist Hold #" + hold.getId(), adminName);
+        hold.setStatus("FULFILLED");
+        holdRequestRepository.save(hold);
+        return loan;
+    }
+
+    @Transactional(readOnly = true)
+    public List<HoldRequest> getActiveHoldsForMember(Long memberId) {
+        return holdRequestRepository.findActiveHoldsByMemberId(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HoldRequest> getAllHolds(String status) {
+        if (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status)) {
+            return holdRequestRepository.findAllByOrderByRequestedAtDesc();
+        }
+        return holdRequestRepository.findByStatusOrderByRequestedAtAsc(status.toUpperCase());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasActiveHoldForBook(Long memberId, Long bookId) {
+        return holdRequestRepository.countActiveHoldForMemberAndBook(memberId, bookId) > 0;
+    }
+
+    @Transactional(readOnly = true)
+    public int getWaitingCountForBook(Long bookId) {
+        return holdRequestRepository.findWaitingQueueForBook(bookId).size();
     }
 
     @Transactional(readOnly = true)
@@ -314,6 +415,8 @@ public class LibraryOpsService {
         long activeLoans = loanRepository.countByStatus("ACTIVE");
         long overdueLoans = loanRepository.countByStatus("OVERDUE");
         long returnedLoans = loanRepository.countByStatus("RETURNED");
+        long waitingHolds = holdRequestRepository.countByStatus("WAITING");
+        long readyHolds = holdRequestRepository.countByStatus("READY");
         Double unpaidFines = loanRepository.sumUnpaidFines();
 
         Map<String, Object> stats = new LinkedHashMap<>();
@@ -330,9 +433,11 @@ public class LibraryOpsService {
         stats.put("overdueLoans", overdueLoans);
         stats.put("openLoans", activeLoans + overdueLoans);
         stats.put("returnedLoans", returnedLoans);
+        stats.put("waitingHolds", waitingHolds);
+        stats.put("readyHolds", readyHolds);
+        stats.put("openHolds", waitingHolds + readyHolds);
         stats.put("unpaidFines", unpaidFines != null ? Math.round(unpaidFines * 100.0) / 100.0 : 0.0);
         stats.put("totalGenres", bookRepository.findDistinctGenres().size());
         return stats;
     }
 }
-

@@ -62,8 +62,20 @@ public class Book {
     @Column(name = "shelf_location", length = 40)
     private String shelfLocation = "A-01";
 
+    @Column(length = 20)
+    private String format = "BOTH"; // PHYSICAL, DIGITAL, BOTH
+
     @Column(name = "cover_color", length = 180)
     private String coverColor = "linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%)";
+
+    @Column(name = "cover_image_url", length = 350)
+    private String coverImageUrl;
+
+    @Column(name = "librarian_note", length = 1000)
+    private String librarianNote;
+
+    @Column(name = "preview_guide", length = 2500)
+    private String previewGuide;
 
     @Column(nullable = false)
     private Boolean featured = false;
@@ -81,6 +93,9 @@ public class Book {
 
     @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ReadingListItem> readingListItems = new ArrayList<>();
+
+    @OneToMany(mappedBy = "book", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<HoldRequest> holdRequests = new ArrayList<>();
 
     // ---- Constructors ----
 
@@ -108,6 +123,7 @@ public class Book {
         this.shelfLocation = shelfLocation != null ? shelfLocation : "A-01";
         this.coverColor = coverColor != null ? coverColor : "linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%)";
         this.featured = featured != null && featured;
+        this.format = "BOTH";
     }
 
     // ---- Helpers ----
@@ -126,6 +142,37 @@ public class Book {
         int total = totalCopies != null && totalCopies > 0 ? totalCopies : 1;
         int avail = availableCopies != null ? availableCopies : 0;
         return Math.min(100, Math.max(0, (int) Math.round((avail * 100.0) / total)));
+    }
+
+    public String getCleanIsbn() {
+        if (isbn == null) return "";
+        return isbn.replaceAll("[^0-9Xx]", "");
+    }
+
+    public String getResolvedCoverUrl() {
+        if (coverImageUrl != null && !coverImageUrl.isBlank()) {
+            return coverImageUrl;
+        }
+        String digits = getCleanIsbn();
+        if (digits.length() == 10 || digits.length() == 13) {
+            return "https://covers.openlibrary.org/b/isbn/" + digits + "-L.jpg?default=false";
+        }
+        return "";
+    }
+
+    public String getFormattedReadingTime() {
+        int p = pages != null && pages > 0 ? pages : 280;
+        int totalMins = (int) Math.round(p * 1.6);
+        int hours = totalMins / 60;
+        int mins = totalMins % 60;
+        if (hours == 0) return mins + "m read";
+        return hours + "h " + mins + "m read";
+    }
+
+    public String getFormatLabel() {
+        if ("DIGITAL".equalsIgnoreCase(format)) return "E-Book Only";
+        if ("PHYSICAL".equalsIgnoreCase(format)) return "Print Shelf";
+        return "Print + Digital";
     }
 
     // ---- Getters & Setters ----
@@ -226,12 +273,44 @@ public class Book {
         this.shelfLocation = shelfLocation;
     }
 
+    public String getFormat() {
+        return format != null ? format : "BOTH";
+    }
+
+    public void setFormat(String format) {
+        this.format = format != null ? format : "BOTH";
+    }
+
     public String getCoverColor() {
         return coverColor != null ? coverColor : "linear-gradient(145deg, #1e3a5f 0%, #0f172a 100%)";
     }
 
     public void setCoverColor(String coverColor) {
         this.coverColor = coverColor;
+    }
+
+    public String getCoverImageUrl() {
+        return coverImageUrl;
+    }
+
+    public void setCoverImageUrl(String coverImageUrl) {
+        this.coverImageUrl = coverImageUrl;
+    }
+
+    public String getLibrarianNote() {
+        return librarianNote;
+    }
+
+    public void setLibrarianNote(String librarianNote) {
+        this.librarianNote = librarianNote;
+    }
+
+    public String getPreviewGuide() {
+        return previewGuide;
+    }
+
+    public void setPreviewGuide(String previewGuide) {
+        this.previewGuide = previewGuide;
     }
 
     public Boolean getFeatured() {
@@ -272,6 +351,14 @@ public class Book {
 
     public void setReadingListItems(List<ReadingListItem> readingListItems) {
         this.readingListItems = readingListItems;
+    }
+
+    public List<HoldRequest> getHoldRequests() {
+        return holdRequests;
+    }
+
+    public void setHoldRequests(List<HoldRequest> holdRequests) {
+        this.holdRequests = holdRequests;
     }
 
     @Override

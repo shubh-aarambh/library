@@ -65,7 +65,7 @@ public class AuthController {
 
     @GetMapping("/register")
     public String showRegister(Model model) {
-        model.addAttribute("pageTitle", "Create Library Card");
+        model.addAttribute("pageTitle", "Get Your Library Card");
         return "auth/register";
     }
 
@@ -88,7 +88,7 @@ public class AuthController {
             Member member = libraryOpsService.registerMember(fullName, email, password, tier);
             session.setAttribute(AuthInterceptor.SESSION_MEMBER_ID, member.getId());
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Welcome to Athenaeum, " + member.getFullName() + "! Your " + member.getMembershipTier() + " card is active.");
+                    "Welcome to Athenaeum, " + member.getFullName() + "! Your " + member.getMembershipTier() + " library card is active.");
             return "redirect:/my-library";
         } catch (IllegalArgumentException ex) {
             redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
@@ -119,9 +119,14 @@ public class AuthController {
                 .filter(l -> "RETURNED".equalsIgnoreCase(l.getStatus()))
                 .collect(Collectors.toList());
 
+        int goal = currentUser.getAnnualReadingGoal();
+        int goalPct = Math.min(100, (int) Math.round((pastLoans.size() * 100.0) / Math.max(1, goal)));
+
         model.addAttribute("member", currentUser);
         model.addAttribute("activeLoans", activeLoans);
         model.addAttribute("pastLoans", pastLoans);
+        model.addAttribute("goalPercent", goalPct);
+        model.addAttribute("activeHolds", libraryOpsService.getActiveHoldsForMember(currentUser.getId()));
         model.addAttribute("readingList", libraryOpsService.getReadingList(currentUser.getId()));
         model.addAttribute("pageTitle", "My Library");
         return "member/dashboard";
@@ -133,7 +138,7 @@ public class AuthController {
                                RedirectAttributes redirectAttributes) {
         Member currentUser = (Member) request.getAttribute("currentUser");
         libraryOpsService.returnBook(loanId, currentUser.getFullName());
-        redirectAttributes.addFlashAttribute("successMessage", "Book returned successfully. Thank you!");
+        redirectAttributes.addFlashAttribute("successMessage", "Book returned! Thanks for keeping the shelf circulating.");
         return "redirect:/my-library";
     }
 
@@ -151,6 +156,45 @@ public class AuthController {
         return "redirect:/my-library";
     }
 
+    @PostMapping("/my-library/progress/{loanId}")
+    public String updateProgress(@PathVariable Long loanId,
+                                 @RequestParam Integer progress,
+                                 HttpServletRequest request,
+                                 RedirectAttributes redirectAttributes) {
+        Member currentUser = (Member) request.getAttribute("currentUser");
+        try {
+            libraryOpsService.updateLoanProgress(loanId, currentUser.getId(), progress != null ? progress : 0);
+            redirectAttributes.addFlashAttribute("successMessage", "Reading progress saved (" + progress + "%).");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/my-library";
+    }
+
+    @PostMapping("/my-library/goal")
+    public String updateReadingGoal(@RequestParam Integer goal,
+                                    HttpServletRequest request,
+                                    RedirectAttributes redirectAttributes) {
+        Member currentUser = (Member) request.getAttribute("currentUser");
+        libraryOpsService.updateReadingGoal(currentUser.getId(), goal != null ? goal : 12);
+        redirectAttributes.addFlashAttribute("successMessage", "Annual reading goal updated to " + goal + " books!");
+        return "redirect:/my-library";
+    }
+
+    @PostMapping("/my-library/holds/cancel/{holdId}")
+    public String cancelMyHold(@PathVariable Long holdId,
+                               HttpServletRequest request,
+                               RedirectAttributes redirectAttributes) {
+        Member currentUser = (Member) request.getAttribute("currentUser");
+        try {
+            libraryOpsService.cancelHold(holdId, currentUser.getId(), currentUser.isAdmin(), currentUser.getFullName());
+            redirectAttributes.addFlashAttribute("successMessage", "Waitlist hold cancelled.");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/my-library";
+    }
+
     @PostMapping("/my-library/reading-list/remove/{bookId}")
     public String removeBookmark(@PathVariable Long bookId,
                                  HttpServletRequest request,
@@ -161,4 +205,3 @@ public class AuthController {
         return "redirect:/my-library";
     }
 }
-

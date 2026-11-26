@@ -41,7 +41,7 @@ public class AdminController {
     @GetMapping("/login")
     public String showAdminLogin(@RequestParam(required = false) Boolean required, Model model) {
         model.addAttribute("authRequired", Boolean.TRUE.equals(required));
-        model.addAttribute("pageTitle", "Admin Console Sign In");
+        model.addAttribute("pageTitle", "Librarian Admin Sign In");
         return "admin/login";
     }
 
@@ -87,6 +87,7 @@ public class AdminController {
         model.addAttribute("genreBreakdown", bookService.getGenreBreakdown());
         model.addAttribute("topBooks", bookService.getTopRatedBooks());
         model.addAttribute("recentLoans", libraryOpsService.getAllLoans("ALL").stream().limit(6).toArray());
+        model.addAttribute("recentHolds", libraryOpsService.getAllHolds("ALL").stream().limit(5).toArray());
         model.addAttribute("recentActivity", libraryOpsService.getRecentActivity());
         model.addAttribute("adminSection", "dashboard");
         model.addAttribute("pageTitle", "Admin Overview");
@@ -174,6 +175,20 @@ public class AdminController {
         libraryOpsService.logActivity("BOOK_UPDATED", "CATALOG", admin.getFullName(),
                 "Updated volume \"" + updated.getTitle() + "\"");
         redirectAttributes.addFlashAttribute("successMessage", "Volume \"" + updated.getTitle() + "\" updated.");
+        return "redirect:/admin/books";
+    }
+
+    @PostMapping("/books/stock/{id}")
+    public String adjustStock(@PathVariable Long id,
+                              @RequestParam int delta,
+                              HttpServletRequest request,
+                              RedirectAttributes redirectAttributes) {
+        Book book = bookService.adjustCopies(id, delta);
+        Member admin = (Member) request.getAttribute("currentUser");
+        libraryOpsService.logActivity("STOCK_ADJUSTED", "CATALOG", admin.getFullName(),
+                "Adjusted \"" + book.getTitle() + "\" inventory to " + book.getAvailableCopies() + "/" + book.getTotalCopies());
+        redirectAttributes.addFlashAttribute("successMessage",
+                "Updated stock for \"" + book.getTitle() + "\" → " + book.getAvailableCopies() + "/" + book.getTotalCopies() + " copies.");
         return "redirect:/admin/books";
     }
 
@@ -293,7 +308,7 @@ public class AdminController {
     }
 
     // =====================================================
-    // Admin Circulation & Loans Desk
+    // Admin Circulation, Loans & Waitlist Holds Desk
     // =====================================================
 
     @GetMapping("/loans")
@@ -334,7 +349,7 @@ public class AdminController {
                              RedirectAttributes redirectAttributes) {
         Member admin = (Member) request.getAttribute("currentUser");
         libraryOpsService.returnBook(id, admin.getFullName());
-        redirectAttributes.addFlashAttribute("successMessage", "Book checked back in and inventory restored.");
+        redirectAttributes.addFlashAttribute("successMessage", "Book checked back in, inventory restored, and waitlist queue updated.");
         return "redirect:/admin/loans";
     }
 
@@ -360,6 +375,40 @@ public class AdminController {
         libraryOpsService.markFinePaid(id, admin.getFullName());
         redirectAttributes.addFlashAttribute("successMessage", "Fine marked as settled.");
         return "redirect:/admin/loans";
+    }
+
+    @GetMapping("/holds")
+    public String manageHolds(@RequestParam(required = false, defaultValue = "ALL") String status, Model model) {
+        model.addAttribute("holds", libraryOpsService.getAllHolds(status));
+        model.addAttribute("selectedStatus", status.toUpperCase());
+        model.addAttribute("stats", libraryOpsService.getLibraryStats());
+        model.addAttribute("adminSection", "holds");
+        model.addAttribute("pageTitle", "Waitlist & Holds Queue");
+        return "admin/holds";
+    }
+
+    @PostMapping("/holds/fulfill/{id}")
+    public String fulfillHold(@PathVariable Long id,
+                              HttpServletRequest request,
+                              RedirectAttributes redirectAttributes) {
+        Member admin = (Member) request.getAttribute("currentUser");
+        try {
+            libraryOpsService.fulfillHold(id, admin.getFullName());
+            redirectAttributes.addFlashAttribute("successMessage", "Hold fulfilled and converted into an active loan!");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+        return "redirect:/admin/holds";
+    }
+
+    @PostMapping("/holds/cancel/{id}")
+    public String cancelHold(@PathVariable Long id,
+                             HttpServletRequest request,
+                             RedirectAttributes redirectAttributes) {
+        Member admin = (Member) request.getAttribute("currentUser");
+        libraryOpsService.cancelHold(id, admin.getId(), true, admin.getFullName());
+        redirectAttributes.addFlashAttribute("successMessage", "Hold request cancelled.");
+        return "redirect:/admin/holds";
     }
 
     // =====================================================
@@ -410,4 +459,3 @@ public class AdminController {
         return "admin/audit";
     }
 }
-

@@ -4,10 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/static/css/styles.css">
 <script>
+    window.__CTX__ = '${pageContext.request.contextPath}';
     (function(){
-        var t = localStorage.getItem('athenaeum-theme');
+        var t = localStorage.getItem('athenaeum-theme-v2');
         if (t) document.documentElement.setAttribute('data-theme', t);
     })();
 </script>
 <script defer src="${pageContext.request.contextPath}/static/js/app.js"></script>
-
